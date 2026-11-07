@@ -13,4 +13,17 @@
     <!-- Dashboard -->
     <string name="dashboard_welcome">Welcome, %1$s!</string>
     <string name="action_logout">Log out</string>
+
+    <!-- Home -->
+    <string name="action_activate">Activate</string>
+    <string name="action_deactivate">Deactivate</string>
+    <string name="status_active">Protection is active</string>
+    <string name="status_inactive">Protection is off</string>
+    <string name="title_logs">Logs</string>
+    <string name="title_alerts">Alerts</string>
+    <string name="title_settings">Settings</string>
+
+    <!-- Placeholder screens -->
+    <string name="action_back">Back</string>
+    <string name="placeholder_empty">Nothing here yet</string>
 </resources>

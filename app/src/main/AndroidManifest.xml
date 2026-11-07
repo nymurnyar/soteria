@@ -21,15 +21,30 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Soteria">
         <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:windowSoftInputMode="adjustResize">
+            android:name=".HomeActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".LogsActivity"
+            android:exported="false"
+            android:parentActivityName=".HomeActivity" />
+        <activity
+            android:name=".AlertsActivity"
+            android:exported="false"
+            android:parentActivityName=".HomeActivity" />
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="false"
+            android:parentActivityName=".HomeActivity" />
+        <!-- Speech-to-text test screen (not linked from Home for now). -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="false" />
         <activity
             android:name=".DashboardActivity"
             android:exported="false" />
