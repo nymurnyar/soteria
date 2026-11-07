@@ -1,0 +1,13 @@
+build/reports/
+
+# Ignore user-specific IntelliJ / Android Studio files
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/usage.statistics.xml
+.idea/**/dictionary.xml
+.idea/**/shelf/
+.idea/**/contentModel.xml
+
+# Ignore local caches and logs
+.idea/dataSources/
+.idea/pkgs/
