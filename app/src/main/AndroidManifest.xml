@@ -31,6 +31,10 @@
             </intent-filter>
         </activity>
         <activity
+            android:name=".CallLogsActivity"
+            android:exported="false"
+            android:parentActivityName=".HomeActivity" />
+        <activity
             android:name=".LogsActivity"
             android:exported="false"
             android:parentActivityName=".HomeActivity" />

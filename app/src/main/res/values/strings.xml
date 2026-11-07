@@ -15,13 +15,46 @@
     <string name="action_logout">Log out</string>
 
     <!-- Home -->
-    <string name="action_activate">Activate</string>
-    <string name="action_deactivate">Deactivate</string>
-    <string name="status_active">Protection is active</string>
+    <string name="action_activate">Activate protection</string>
+    <string name="action_deactivate">Turn off protection</string>
+    <string name="status_active">You\'re protected</string>
     <string name="status_inactive">Protection is off</string>
+    <string name="status_active_detail">Soteria is screening your calls for scams and social engineering.</string>
+    <string name="status_inactive_detail">Turn on Soteria to screen your calls for scams in real time.</string>
     <string name="title_logs">Logs</string>
     <string name="title_alerts">Alerts</string>
     <string name="title_settings">Settings</string>
+    <string name="greeting_morning">Good morning</string>
+    <string name="greeting_afternoon">Good afternoon</string>
+    <string name="greeting_evening">Good evening</string>
+    <string name="home_overview_title">Overview</string>
+    <string name="home_stat_checked">Calls checked</string>
+    <string name="home_latest_alert">LATEST ALERT</string>
+    <string name="home_quick_access_title">Quick access</string>
+    <string name="home_logs_title">Call logs</string>
+    <string name="home_logs_subtitle">%1$d calls reviewed</string>
+    <string name="home_alerts_subtitle_some">%1$d calls need your attention</string>
+    <string name="home_alerts_subtitle_none">No suspicious calls</string>
+    <string name="home_settings_subtitle">Protection, notifications &amp; privacy</string>
+    <string name="home_footer">Soteria · Call protection for your organization</string>
+    <string name="home_protection_on_toast">Protection activated</string>
+    <string name="home_protection_off_toast">Protection turned off</string>
+
+    <!-- Call logs -->
+    <string name="call_logs_title">Call Logs</string>
+    <string name="call_logs_subtitle">Review your recent conversations.</string>
+    <string name="call_summary_title">Call summary</string>
+    <string name="stat_total_calls">Total Calls</string>
+    <string name="stat_safe">Safe</string>
+    <string name="stat_flagged">Flagged</string>
+    <string name="stat_monitoring">Monitoring</string>
+    <string name="call_search_hint">Search by caller or phone number</string>
+    <string name="filter_all">All</string>
+    <string name="filter_safe">Safe</string>
+    <string name="filter_monitoring">Monitoring</string>
+    <string name="filter_flagged">Flagged</string>
+    <string name="recent_calls_title">Recent calls</string>
+    <string name="call_empty_results">No calls match your search or filter.</string>
 
     <!-- Placeholder screens -->
     <string name="action_back">Back</string>
