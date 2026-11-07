@@ -46,7 +46,7 @@ public class HomeActivity extends AppCompatActivity {
         });
 
         findViewById(R.id.logsButton).setOnClickListener(v ->
-                startActivity(new Intent(this, LogsActivity.class)));
+                startActivity(new Intent(this, CallLogsActivity.class)));
         findViewById(R.id.alertsButton).setOnClickListener(v ->
                 startActivity(new Intent(this, AlertsActivity.class)));
         findViewById(R.id.settingsButton).setOnClickListener(v ->

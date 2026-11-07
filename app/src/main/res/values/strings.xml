@@ -23,6 +23,22 @@
     <string name="title_alerts">Alerts</string>
     <string name="title_settings">Settings</string>
 
+    <!-- Call logs -->
+    <string name="call_logs_title">Call Logs</string>
+    <string name="call_logs_subtitle">Review your recent conversations.</string>
+    <string name="call_summary_title">Call summary</string>
+    <string name="stat_total_calls">Total Calls</string>
+    <string name="stat_safe">Safe</string>
+    <string name="stat_flagged">Flagged</string>
+    <string name="stat_monitoring">Monitoring</string>
+    <string name="call_search_hint">Search by caller or phone number</string>
+    <string name="filter_all">All</string>
+    <string name="filter_safe">Safe</string>
+    <string name="filter_monitoring">Monitoring</string>
+    <string name="filter_flagged">Flagged</string>
+    <string name="recent_calls_title">Recent calls</string>
+    <string name="call_empty_results">No calls match your search or filter.</string>
+
     <!-- Placeholder screens -->
     <string name="action_back">Back</string>
     <string name="placeholder_empty">Nothing here yet</string>
