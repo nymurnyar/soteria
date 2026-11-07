@@ -4,6 +4,13 @@
 
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
+    <!-- Overlay feature: floating bubble, call detection, background service -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <!-- Required on Android 11+ so SpeechRecognizer can see the system recognition service. -->
     <queries>
         <intent>
@@ -33,6 +40,20 @@
         <activity
             android:name=".DashboardActivity"
             android:exported="false" />
+
+        <!-- Overlay feature -->
+        <activity
+            android:name=".OverlaySetupActivity"
+            android:exported="false" />
+
+        <service
+            android:name=".CallWatcherService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Watches call state to offer scam-protection sessions" />
+        </service>
     </application>
 
 </manifest>
