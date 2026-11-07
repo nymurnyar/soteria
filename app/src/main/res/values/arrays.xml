@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Labels shown to the user for the default session length. -->
+    <string-array name="session_length_entries">
+        <item>15 minutes</item>
+        <item>30 minutes</item>
+        <item>1 hour</item>
+        <item>2 hours</item>
+    </string-array>
+
+    <!-- Stored values (minutes). ListPreference always stores these as Strings. -->
+    <string-array name="session_length_values" translatable="false">
+        <item>15</item>
+        <item>30</item>
+        <item>60</item>
+        <item>120</item>
+    </string-array>
+
+    <!-- Scam sensitivity -->
+    <string-array name="sensitivity_entries">
+        <item>Low (fewer alerts)</item>
+        <item>Medium</item>
+        <item>High (flag anything suspicious)</item>
+    </string-array>
+    <string-array name="sensitivity_values" translatable="false">
+        <item>low</item>
+        <item>medium</item>
+        <item>high</item>
+    </string-array>
+
+    <!-- Transcript auto-delete (days) -->
+    <string-array name="auto_delete_entries">
+        <item>Never</item>
+        <item>After 1 day</item>
+        <item>After 7 days</item>
+    </string-array>
+    <string-array name="auto_delete_values" translatable="false">
+        <item>never</item>
+        <item>1</item>
+        <item>7</item>
+    </string-array>
+
+    <!-- Where the AI runs -->
+    <string-array name="ai_mode_entries">
+        <item>On-device (private)</item>
+        <item>Cloud (more accurate)</item>
+    </string-array>
+    <string-array name="ai_mode_values" translatable="false">
+        <item>on_device</item>
+        <item>cloud</item>
+    </string-array>
+</resources>

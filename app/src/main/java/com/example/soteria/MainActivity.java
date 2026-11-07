@@ -129,7 +129,7 @@ public class MainActivity extends AppCompatActivity {
         }
         listening = true;
         downloadAttempted = false;
-        toggleButton.setText("Stop");
+        toggleButton.setText(R.string.action_stop_listening);
 
         if (onDevice && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             setStatus("Checking on-device model…");
@@ -299,7 +299,7 @@ public class MainActivity extends AppCompatActivity {
         if (recognizer != null) {
             recognizer.cancel();
         }
-        toggleButton.setText("Start Listening");
+        toggleButton.setText(R.string.action_start_listening);
         setStatus("Stopped");
         renderTranscript(null); // drop any dangling partial text
     }
@@ -396,7 +396,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setStatus(String status) {
-        statusText.setText("Status: " + status);
+        statusText.setText(getString(R.string.status_format, status));
     }
 
     private static String errorName(int error) {

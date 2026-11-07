@@ -26,4 +26,38 @@
     <!-- Placeholder screens -->
     <string name="action_back">Back</string>
     <string name="placeholder_empty">Nothing here yet</string>
+
+    <!-- Speech-to-text test screen -->
+    <string name="action_start_listening">Start Listening</string>
+    <string name="action_stop_listening">Stop</string>
+    <string name="status_format">Status: %1$s</string>
+
+    <!-- Settings -->
+    <string name="pref_category_session">Session</string>
+    <string name="pref_session_length_title">Default session length</string>
+    <string name="pref_show_overlay_title">Show overlay</string>
+    <string name="pref_show_overlay_summary">Display the Soteria overlay during a session</string>
+    <string name="pref_category_alerts">Alerts</string>
+    <string name="pref_vibrate_title">Vibrate on alert</string>
+    <string name="pref_category_monitoring">Monitoring</string>
+    <string name="pref_monitor_calls_title">Phone calls</string>
+    <string name="pref_monitor_sms_title">SMS messages</string>
+    <string name="pref_monitor_email_title">Email</string>
+    <string name="pref_monitor_whatsapp_title">WhatsApp</string>
+    <string name="pref_auto_start_unknown_title">Auto-start on unknown callers</string>
+    <string name="pref_auto_start_unknown_summary">Start monitoring when a number isn\'t in your contacts</string>
+    <string name="pref_sensitivity_title">Scam sensitivity</string>
+    <string name="pref_sound_title">Sound on alert</string>
+    <string name="pref_category_trusted_contacts">Trusted contacts</string>
+    <string name="pref_notify_contacts_title">Notify contacts on high-risk alerts</string>
+    <string name="pref_add_contact_title">+ Add trusted contact</string>
+    <string name="pref_contact_remove_hint">Tap to remove</string>
+    <string name="pref_category_privacy">Privacy &amp; permissions</string>
+    <string name="pref_auto_delete_title">Auto-delete transcripts</string>
+    <string name="pref_ai_mode_title">AI mode</string>
+    <string name="pref_perm_overlay_title">Display over other apps</string>
+    <string name="pref_perm_mic_title">Microphone</string>
+    <string name="pref_perm_notifications_title">Notification access</string>
+    <string name="pref_perm_granted">Granted</string>
+    <string name="pref_perm_missing">Not granted. Tap to fix</string>
 </resources>
