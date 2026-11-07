@@ -1,13 +1,46 @@
-build/reports/
+# ---- Gradle ----
+.gradle/
+build/
+**/build/
+!gradle/wrapper/gradle-wrapper.jar
+.kotlin/
 
-# Ignore user-specific IntelliJ / Android Studio files
-.idea/**/workspace.xml
-.idea/**/tasks.xml
-.idea/**/usage.statistics.xml
-.idea/**/dictionary.xml
-.idea/**/shelf/
-.idea/**/contentModel.xml
+# ---- Local config (machine-specific: SDK path, keys) ----
+local.properties
+*.keystore
+*.jks
+google-services.json
 
-# Ignore local caches and logs
-.idea/dataSources/
-.idea/pkgs/
+# ---- Android Studio / IntelliJ ----
+# Per-machine IDE state; Android Studio regenerates it on project open.
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+captures/
+.externalNativeBuild/
+.cxx/
+.navigation/
+
+# ---- Build artifacts ----
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+output-metadata.json
+
+# ---- Logs ----
+*.log
+
+# ---- OS files ----
+.DS_Store
+._*
+Thumbs.db
+desktop.ini
+
+# ---- Editors ----
+.vscode/
+*.swp
+*~
