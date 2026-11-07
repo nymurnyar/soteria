@@ -1,3 +1,16 @@
 <resources>
     <string name="app_name">soteria</string>
+
+    <!-- Login -->
+    <string name="app_title">Soteria</string>
+    <string name="login_subtitle">Sign in to continue</string>
+    <string name="hint_username">Username or email</string>
+    <string name="hint_password">Password</string>
+    <string name="action_login">Log in</string>
+    <string name="error_username_required">Username is required</string>
+    <string name="error_password_short">Password must be at least %1$d characters</string>
+
+    <!-- Dashboard -->
+    <string name="dashboard_welcome">Welcome, %1$s!</string>
+    <string name="action_logout">Log out</string>
 </resources>
