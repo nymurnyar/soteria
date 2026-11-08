@@ -32,20 +32,47 @@ import re
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import Response
 
+
+def _load_env_files() -> None:
+    """Loads KEY=value lines from <repo>/.env and backend/.env (no extra dependency).
+    Real environment variables win, so `export X=...` still overrides the files."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    for path in (os.path.join(here, "..", ".env"), os.path.join(here, ".env")):
+        if not os.path.isfile(path):
+            continue
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, value = line.split("=", 1)
+                os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+
+
+_load_env_files()
+
 PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "").rstrip("/")  # e.g. https://abc.ngrok.app
 TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "")
 SOTERIA_API_KEY = os.environ.get("SOTERIA_API_KEY", "")
 VALIDATE_TWILIO = os.environ.get("VALIDATE_TWILIO", "0") != "0"  # set to 1 (and pip install twilio) for production
 LANGUAGE_CODE = os.environ.get("TRANSCRIPTION_LANGUAGE", "en-US")
 
-# Scam-analysis model: gpt-oss via any OpenAI-compatible server.
+# Scam-analysis model, in order of preference:
+#   1. Gemini (GEMINI_API_KEY in .env)
+#   2. gpt-oss via any OpenAI-compatible server (LM Studio / Ollama / Groq), if LLM_ENABLED=1
+#   3. keyword check (always works, offline)
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
+GEMINI_TIMEOUT = float(os.environ.get("GEMINI_TIMEOUT", "15"))
+
+# gpt-oss via any OpenAI-compatible server.
 # Default = LM Studio's local server (Developer tab -> Start Server) with gpt-oss-20b loaded.
 # Ollama: LLM_BASE_URL=http://localhost:11434/v1  LLM_MODEL=gpt-oss:20b
 # Groq:   LLM_BASE_URL=https://api.groq.com/openai/v1  LLM_MODEL=openai/gpt-oss-20b  LLM_API_KEY=...
 LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "http://localhost:1234/v1").rstrip("/")
 LLM_MODEL = os.environ.get("LLM_MODEL", "openai/gpt-oss-20b")
 LLM_API_KEY = os.environ.get("LLM_API_KEY", "lm-studio")
-LLM_ENABLED = os.environ.get("LLM_ENABLED", "1") != "0"
+LLM_ENABLED = os.environ.get("LLM_ENABLED", "0" if GEMINI_API_KEY else "1") != "0"
 LLM_TIMEOUT = float(os.environ.get("LLM_TIMEOUT", "45"))
 ANALYZE_EVERY_LINES = int(os.environ.get("ANALYZE_EVERY_LINES", "2"))  # "every few sentences"
 
@@ -140,7 +167,8 @@ def get_session(code: str, after: int = 0) -> dict:
 
 @app.get("/health")
 def health() -> dict:
-    return {"ok": True}
+    ai = "gemini" if GEMINI_API_KEY else ("gpt-oss" if LLM_ENABLED else "keywords")
+    return {"ok": True, "ai": ai, "model": GEMINI_MODEL if GEMINI_API_KEY else None}
 
 
 # ---- Twilio webhooks ---------------------------------------------------------------------
@@ -249,11 +277,17 @@ def _start_analysis(code: str, session: dict) -> None:
 
 
 def _analyze(code: str, transcript: str, upto: int) -> None:
-    try:
-        result = _ask_llm(transcript) if LLM_ENABLED else None
-    except Exception as e:  # model not running / bad JSON: fall back so the app still gets an answer
-        print(f"[soteria] gpt-oss analysis failed: {e}")
-        result = None
+    result = None
+    if GEMINI_API_KEY:
+        try:
+            result = _ask_gemini(transcript)
+        except Exception as e:  # network / quota / bad JSON: fall back so the app still gets an answer
+            print(f"[soteria] Gemini analysis failed: {e}")
+    if result is None and LLM_ENABLED:
+        try:
+            result = _ask_llm(transcript)
+        except Exception as e:  # model not running / bad JSON
+            print(f"[soteria] gpt-oss analysis failed: {e}")
     if result is None:
         result = _keyword_analysis(transcript)
     result["analyzed_lines"] = upto
@@ -269,6 +303,49 @@ def _analyze(code: str, transcript: str, upto: int) -> None:
             _start_analysis(code, session)
         elif len(session["lines"]) - upto >= ANALYZE_EVERY_LINES:
             _start_analysis(code, session)
+
+
+GEMINI_SCHEMA = {
+    "type": "OBJECT",
+    "properties": {
+        "is_scam": {"type": "BOOLEAN"},
+        "risk": {"type": "INTEGER"},
+        "signs": {"type": "ARRAY", "items": {"type": "STRING"}},
+        "summary": {"type": "STRING"},
+    },
+    "required": ["is_scam", "risk", "signs", "summary"],
+}
+
+
+def _ask_gemini(transcript: str) -> dict:
+    import urllib.request
+
+    body = json.dumps({
+        "systemInstruction": {"parts": [{"text": SCAM_PROMPT}]},
+        "contents": [{"role": "user", "parts": [{"text": "Transcript so far:\n" + transcript[-12000:]}]}],
+        "generationConfig": {
+            "temperature": 0,
+            "responseMimeType": "application/json",
+            "responseSchema": GEMINI_SCHEMA,
+        },
+    }).encode()
+    req = urllib.request.Request(
+        f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent",
+        data=body, method="POST",
+        headers={"Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY},
+    )
+    with urllib.request.urlopen(req, timeout=GEMINI_TIMEOUT) as resp:
+        reply = json.loads(resp.read().decode())
+    raw = reply["candidates"][0]["content"]["parts"][0]["text"]
+    data = json.loads(raw[raw.find("{"):raw.rfind("}") + 1])
+    score = max(0, min(100, int(data.get("risk", 0))))
+    return {
+        "score": score,
+        "is_scam": bool(data.get("is_scam", score >= 70)),
+        "signs": [str(x) for x in data.get("signs", [])][:6],
+        "summary": str(data.get("summary", "")),
+        "source": "gemini",
+    }
 
 
 def _ask_llm(transcript: str) -> dict:

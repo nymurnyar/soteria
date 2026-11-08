@@ -65,7 +65,6 @@ public class AlertsActivity extends AppCompatActivity implements AlertAdapter.Li
         }
 
         store = new AlertStore(this);
-        calls = CallLogRepository.getCalls(this);
 
         findViewById(R.id.backButton).setOnClickListener(v -> finish());
         list = findViewById(R.id.alertList);
@@ -79,7 +78,13 @@ public class AlertsActivity extends AppCompatActivity implements AlertAdapter.Li
 
         tabOpen.setOnClickListener(v -> selectTab(true));
         tabResolved.setOnClickListener(v -> selectTab(false));
+    }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Reload: a call may have been saved, or its final AI verdict updated, since we were last here.
+        calls = CallLogRepository.getCalls(this);
         refresh();
     }
 
@@ -184,7 +189,7 @@ public class AlertsActivity extends AppCompatActivity implements AlertAdapter.Li
 
         AlertAdapter.stylePill(view.findViewById(R.id.sheetSeverity),
                 getString(sev.label), sev.text, sev.background);
-        ((TextView) view.findViewById(R.id.sheetTime)).setText(call.getTimestamp());
+        ((TextView) view.findViewById(R.id.sheetTime)).setText(CallLogRepository.timeLabel(call));
         ((TextView) view.findViewById(R.id.sheetCaller)).setText(call.getDisplayName());
         ((TextView) view.findViewById(R.id.sheetNumber)).setText(call.getPhoneNumber());
 

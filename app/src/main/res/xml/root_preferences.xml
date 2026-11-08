@@ -122,7 +122,7 @@
             app:useSimpleSummaryProvider="true" />
 
         <ListPreference
-            app:defaultValue="on_device"
+            app:defaultValue="cloud"
             app:entries="@array/ai_mode_entries"
             app:entryValues="@array/ai_mode_values"
             app:key="ai_mode"

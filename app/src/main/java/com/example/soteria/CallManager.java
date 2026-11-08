@@ -60,6 +60,10 @@ public final class CallManager {
     private static final long LISTENING_POLL_MS = 500;
     private static final long TRANSCRIPT_POLL_MS = 1_500;
     private static final int MAX_MERGE_ATTEMPTS = 6;
+    /** Live notification: at most one update per second (Android drops faster updates anyway). */
+    private static final long NOTIFY_MIN_INTERVAL_MS = 1_000;
+    /** Lines of transcript shown in the notification. */
+    private static final int NOTIFY_TRANSCRIPT_LINES = 3;
     /** Token for all protection-related callbacks so they can be cancelled together. */
     private static final Object PROTECTION_TOKEN = new Object();
 
@@ -102,6 +106,10 @@ public final class CallManager {
     // Offline (on-phone) transcription instead of the Twilio line.
     @Nullable private OfflineTranscriber offline;
     private boolean offlineActive = false;
+    // Gemini scam analysis for offline calls: one request at a time, re-run if new lines arrived.
+    private boolean aiInFlight = false;
+    private boolean aiDirty = false;
+    private boolean aiAnswered = false; // Gemini has answered for this call
 
     // Floating overlay (ScreenZen-style session bubble) for the current call.
     @Nullable private OverlayManager overlay;
@@ -162,6 +170,9 @@ public final class CallManager {
         if (getPrimaryCall() == null) {
             endProtection();
             closeOverlay();
+            main.removeCallbacks(notificationUpdate);
+            notificationScheduled = false;
+            lastNotificationKey = "";
             CallNotifications.cancel(app);
         } else {
             updateOngoingNotification();
@@ -431,6 +442,8 @@ public final class CallManager {
         protectedCall = call;
         sessionCode = null;
         codeSent = false;
+        aiDirty = false;
+        aiAnswered = false;
         transcript.setLength(0);
         partialTranscript = "";
         transcriptNext = 0;
@@ -494,8 +507,12 @@ public final class CallManager {
             transcript.append(text);
             partialTranscript = "";
             protectionDetail = app.getString(R.string.protection_offline_active);
+            // Instant on-phone keyword check; Gemini (if on) refines it a second later.
             LocalRiskChecker.Result r = LocalRiskChecker.check(transcript.toString());
-            applyRiskValues(r.score, r.isScam, r.signs, r.summary);
+            if (!aiAnswered || r.score > riskScore) {
+                applyRiskValues(r.score, r.isScam, r.signs, r.summary);
+            }
+            requestAiCheck();
             notifyChanged();
         }
 
@@ -517,6 +534,34 @@ public final class CallManager {
             notifyChanged();
         }
     };
+
+    /** Gemini scam analysis is used when a key is built in and Settings › AI mode is "cloud". */
+    private boolean useGemini() {
+        return GeminiScamChecker.isConfigured() && "cloud".equals(SettingsKeys.aiMode(app));
+    }
+
+    /** Sends the whole offline transcript to Gemini; its answer replaces the keyword result. */
+    private void requestAiCheck() {
+        if (!useGemini() || transcript.length() == 0) return;
+        if (aiInFlight) {
+            aiDirty = true; // check again with the newer lines when this one returns
+            return;
+        }
+        aiInFlight = true;
+        aiDirty = false;
+        final Call call = protectedCall;
+        GeminiScamChecker.check(transcript.toString(), result -> {
+            aiInFlight = false;
+            boolean current = offlineActive && protectedCall == call;
+            if (current && result != null) {
+                Log.i(TAG, "Gemini risk " + result.score + " " + result.signs);
+                aiAnswered = true;
+                applyRiskValues(result.score, result.isScam, result.signs, result.summary);
+                notifyChanged();
+            }
+            if (aiDirty && offlineActive) requestAiCheck();
+        });
+    }
 
     /** The real caller to protect: the primary call, or the non-listener child of a conference. */
     @Nullable
@@ -660,6 +705,11 @@ public final class CallManager {
         if (!warnedUser && isRisky()) {
             warnedUser = true;
             alertUser();
+            // Pop-up so the warning is seen outside Soteria / with the screen off.
+            // (When the call screen is open, its red banner already shows it.)
+            if (listeners.isEmpty()) {
+                CallNotifications.showScamAlert(app, protectedName, riskScore, riskSummary, riskSigns);
+            }
         }
         updateOverlayRisk();
     }
@@ -706,6 +756,7 @@ public final class CallManager {
     }
 
     private void endProtection() {
+        final boolean wasOffline = offlineActive;
         stopOffline();
         if (protectedCall != null && (protection == Protection.PROTECTED || transcript.length() > 0)) {
             final String id = "call-" + protectedStartMs;
@@ -714,8 +765,18 @@ public final class CallManager {
             final String number = protectedNumber;
             final boolean outgoing = protectedOutgoing;
             final long endMs = System.currentTimeMillis();
-            saveCall(id, startMs, endMs, name, number, outgoing, getTranscriptText(),
+            final String fullText = getTranscriptText();
+            saveCall(id, startMs, endMs, name, number, outgoing, fullText,
                     riskScore, riskIsScam, riskSigns, riskSummary);
+            // Offline call: one final Gemini check on the whole call, then update the saved log.
+            if (wasOffline && useGemini() && !fullText.isEmpty()) {
+                GeminiScamChecker.check(fullText, result -> {
+                    if (result == null) return;
+                    Log.i(TAG, "Final Gemini risk " + result.score);
+                    saveCall(id, startMs, endMs, name, number, outgoing, fullText,
+                            result.score, result.isScam, result.signs, result.summary);
+                });
+            }
             // The backend does one last AI check when the call ends: fetch it and update the saved call.
             final String code = sessionCode;
             if (code != null) {
@@ -855,15 +916,66 @@ public final class CallManager {
 
     private void notifyChanged() {
         for (Listener listener : new ArrayList<>(listeners)) listener.onCallStateChanged();
+        // Every transcript / partial / risk / state change also refreshes the live notification
+        // (throttled + de-duplicated, so this is cheap to call often).
+        updateOngoingNotification();
     }
 
+    // Live ongoing-call notification state.
+    private boolean notificationScheduled = false;
+    private long lastNotificationMs = 0;
+    private String lastNotificationKey = "";
+    private final Runnable notificationUpdate = () -> {
+        notificationScheduled = false;
+        postOngoingNotification();
+    };
+
+    /** Requests a notification refresh; coalesces bursts into at most one post per second. */
     private void updateOngoingNotification() {
+        if (notificationScheduled) return; // already queued: it will pick up the latest state
+        long wait = Math.max(0, lastNotificationMs + NOTIFY_MIN_INTERVAL_MS - android.os.SystemClock.uptimeMillis());
+        notificationScheduled = true;
+        main.postDelayed(notificationUpdate, wait);
+    }
+
+    private void postOngoingNotification() {
         Call primary = getPrimaryCall();
         if (primary == null || primary.getState() == Call.STATE_RINGING) return;
-        CallNotifications.showOngoing(app, getPrimaryDisplayName(),
-                protection == Protection.PROTECTED
-                        ? app.getString(R.string.protection_active)
-                        : app.getString(R.string.notification_ongoing));
+
+        String name = getPrimaryDisplayName();
+        String status;
+        switch (protection) {
+            case PROTECTED:
+                // Offline: show the transcriber's live status (model download, mic blocked, ...).
+                status = offlineActive
+                        ? (protectionDetail.isEmpty() ? app.getString(R.string.protection_offline_active) : protectionDetail)
+                        : app.getString(R.string.protection_active);
+                break;
+            case CONNECTING:
+            case FAILED:
+                status = protectionDetail;
+                break;
+            default:
+                status = app.getString(R.string.notification_ongoing);
+        }
+        boolean transcribing = protection == Protection.PROTECTED || transcript.length() > 0;
+        String text = transcribing ? recentTranscript() : "";
+        if (protection == Protection.PROTECTED && text.isEmpty()) text = app.getString(R.string.notif_listening);
+        int risk = protection == Protection.PROTECTED && isRisky() ? riskScore : -1;
+        String summary = risk >= 0 ? riskSummary : "";
+
+        // Skip the system call entirely when nothing visible changed.
+        String key = name + '|' + status + '|' + text + '|' + risk + '|' + summary;
+        if (key.equals(lastNotificationKey)) return;
+        lastNotificationKey = key;
+        lastNotificationMs = android.os.SystemClock.uptimeMillis();
+        CallNotifications.showOngoing(app, name, status, text, risk, summary,
+                primary.getDetails().getConnectTimeMillis());
+    }
+
+    /** Last few final lines plus the in-progress partial, for the notification. */
+    private String recentTranscript() {
+        return CallNotifications.tailLines(getTranscriptText(), NOTIFY_TRANSCRIPT_LINES, 400);
     }
 
     private void launchInCallUi() {

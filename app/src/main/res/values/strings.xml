@@ -122,6 +122,10 @@
     <string name="call_hang_up">Hang up</string>
     <string name="channel_incoming">Incoming calls</string>
     <string name="channel_ongoing">Ongoing calls</string>
+    <string name="channel_scam">Scam warnings</string>
+    <string name="notif_risk_title">⚠ Possible scam (%1$d%%) · %2$s</string>
+    <string name="notif_risk_text">Soteria thinks this call may be a scam. Tap to see why.</string>
+    <string name="notif_listening">Listening…</string>
     <string name="notification_ongoing">Ongoing call</string>
 
     <!-- Protection (listener merge) -->
@@ -175,7 +179,7 @@
     <string name="mode_badge_soon">COMING SOON</string>
     <string name="mode_offline_title">Offline on this phone</string>
     <string name="mode_offline_desc">Transcribes calls on the phone using speakerphone.</string>
-    <string name="mode_offline_points">✓ No internet or setup needed\n✓ Nothing leaves the phone\n✓ Works on any carrier</string>
+    <string name="mode_offline_points">✓ No setup needed, works on any carrier\n✓ Speech is transcribed on the phone\n✓ Gemini AI scam check (keywords when offline)</string>
     <string name="mode_twilio_title">Twilio listening line</string>
     <string name="mode_twilio_desc">A secure line joins the call and hears both voices clearly.</string>
     <string name="mode_twilio_points">• Needs a Twilio number + Soteria server\n• AI scam analysis in the cloud</string>
@@ -190,7 +194,7 @@
     <string name="activation_permissions_required">Phone permission is required to protect calls.</string>
     <string name="consent_title">Before you turn on protection</string>
     <string name="consent_body">When protection is on, Soteria adds a listening line to your calls:\n\n• Each call is transcribed live by Twilio.\n• The transcript is sent to Soteria\'s server and checked by AI for signs of a scam.\n• Transcripts and risk results are saved in Logs and Alerts on this phone.\n\nIn many places, the law requires the other person to be told that a call is recorded or transcribed. You are responsible for getting their consent.\n\nEmergency calls are never monitored. You can turn protection off at any time.</string>
-    <string name="consent_body_offline">When protection is on, Soteria listens to your calls on this phone:\n\n• Calls are put on speaker and transcribed live on the phone. Nothing is sent to the internet.\n• The transcript is checked on the phone for signs of a scam.\n• Transcripts and risk results are saved in Logs and Alerts on this phone.\n\nIn many places, the law requires the other person to be told that a call is recorded or transcribed. You are responsible for getting their consent.\n\nEmergency calls are never monitored. You can turn protection off at any time.</string>
+    <string name="consent_body_offline">When protection is on, Soteria listens to your calls on this phone:\n\n• Calls are put on speaker and transcribed live on the phone. No audio leaves the phone.\n• The text transcript is checked for scams by Gemini AI (Google) when the phone is online, otherwise by a keyword check on the phone. To keep everything on the phone, choose Settings › AI mode › On-device.\n• Transcripts and risk results are saved in Logs and Alerts on this phone.\n\nIn many places, the law requires the other person to be told that a call is recorded or transcribed. You are responsible for getting their consent.\n\nEmergency calls are never monitored. You can turn protection off at any time.</string>
     <string name="consent_checkbox">I understand and agree to call monitoring</string>
     <string name="consent_agree">Agree and turn on</string>
     <string name="consent_required">Protection stays off until you agree.</string>
@@ -231,9 +235,10 @@
     <string name="pref_perm_overlay_title">Display over other apps</string>
     <string name="pref_perm_mic_title">Microphone</string>
     <string name="pref_perm_notifications_title">Notification access</string>
+    <string name="pref_pending_summary">Pending · not available yet</string>
     <string name="pref_perm_granted">Granted</string>
     <string name="pref_perm_missing">Not granted. Tap to fix</string>
-    <string name="pref_trustline_number_title">TrustLine number</string>
-    <string name="pref_backend_url_title">Backend URL (ngrok)</string>
+    <string name="pref_trustline_number_title">TrustLine number (Twilio · coming soon)</string>
+    <string name="pref_backend_url_title">Backend URL (Twilio · coming soon)</string>
     <string name="risk_warning_title">⚠ Possible scam · %1$d%% risk</string>
 </resources>

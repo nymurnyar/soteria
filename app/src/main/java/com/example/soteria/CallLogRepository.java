@@ -18,6 +18,16 @@ public final class CallLogRepository {
         return calls;
     }
 
+    /** True for the built-in sample calls (not real calls from this phone). */
+    public static boolean isSample(CallLog call) {
+        return call.getCallId().startsWith("demo-");
+    }
+
+    /** Date/time to show, with "Sample" added for the built-in example calls. */
+    public static String timeLabel(CallLog call) {
+        return isSample(call) ? call.getTimestamp() + "  ·  Sample" : call.getTimestamp();
+    }
+
     public static List<CallLog> getDemoCalls() {
         List<CallLog> calls = new ArrayList<>();
         calls.add(call("demo-001", "Alex Morgan", "+1 780 555 0142", 0, "10:42 AM",

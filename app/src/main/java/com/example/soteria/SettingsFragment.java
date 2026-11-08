@@ -27,6 +27,21 @@ public class SettingsFragment extends PreferenceFragmentCompat {
 
     private static final String CONTACT_ROW_PREFIX = "contact_";
 
+    /**
+     * Settings that are saved but not used by the app yet. Shown greyed out with "Pending" so
+     * nobody thinks they're active. Remove a key from here once its feature is built.
+     */
+    private static final String[] PENDING_KEYS = {
+            SettingsKeys.MONITOR_SMS,
+            SettingsKeys.MONITOR_EMAIL,
+            SettingsKeys.MONITOR_WHATSAPP,
+            SettingsKeys.AUTO_START_UNKNOWN,
+            SettingsKeys.DEFAULT_SESSION_LENGTH,
+            SettingsKeys.NOTIFY_CONTACTS,
+            "add_contact",
+            SettingsKeys.AUTO_DELETE,
+    };
+
     private PreferenceCategory contactsCategory;
 
     /** Android's contact picker. Returns one phone number; no READ_CONTACTS permission needed. */
@@ -72,6 +87,29 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         openOnClick("perm_notifications", notificationSettings);
 
         showContacts();
+        markPending();
+    }
+
+    /** Greys out (lower contrast, not tappable) features that aren't built yet and labels them Pending. */
+    private void markPending() {
+        for (String key : PENDING_KEYS) {
+            Preference pref = findPreference(key);
+            if (pref == null) continue;
+            if (pref instanceof androidx.preference.ListPreference) {
+                // Hide the stored value: it isn't applied yet.
+                ((androidx.preference.ListPreference) pref).setSummaryProvider(null);
+            }
+            if (pref instanceof androidx.preference.TwoStatePreference) {
+                // Show switches as off so nothing looks active.
+                androidx.preference.TwoStatePreference toggle = (androidx.preference.TwoStatePreference) pref;
+                toggle.setPersistent(false);
+                toggle.setChecked(false);
+                toggle.setSummaryOn(null);
+                toggle.setSummaryOff(null);
+            }
+            pref.setSummary(R.string.pref_pending_summary);
+            pref.setEnabled(false);
+        }
     }
 
     @Override

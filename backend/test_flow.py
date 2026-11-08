@@ -2,6 +2,7 @@
 
 import json
 import os
+import time
 
 os.environ["VALIDATE_TWILIO"] = "0"
 os.environ["SOTERIA_API_KEY"] = "test-key"
@@ -25,11 +26,11 @@ def test_full_flow():
 
     # Twilio answers the listener leg and gathers the code.
     voice = client.post("/twilio/voice", data={"CallSid": "CA1"}).text
-    assert "<Gather" in voice and 'numDigits="6"' in voice
+    assert "<Gather" in voice and 'finishOnKey="#"' in voice
 
-    # Wrong code hangs up; right code starts transcription.
+    # Wrong code hangs up; right code starts transcription. The app sends "*" + code (+ "#").
     assert "<Hangup/>" in client.post("/twilio/joined", data={"Digits": "000000x"}).text
-    joined = client.post("/twilio/joined", data={"Digits": code, "CallSid": "CA1"}).text
+    joined = client.post("/twilio/joined", data={"Digits": "*" + code, "CallSid": "CA1"}).text
     assert "<Transcription" in joined and f"code={code}" in joined
     assert client.get(f"/sessions/{code}", headers=HEADERS).json()["status"] == "listening"
 
@@ -48,8 +49,27 @@ def test_full_flow():
     # Incremental polling only returns new lines.
     assert client.get(f"/sessions/{code}?after=1", headers=HEADERS).json()["lines"] == []
 
+    # Scam talk -> the AI (Gemini if GEMINI_API_KEY is set, else keywords) flags it.
+    for line in ["This is the Canada Revenue Agency.",
+                 "You must pay with gift cards right now or the police will arrest you."]:
+        client.post(url, data={"TranscriptionEvent": "transcription-content", "Final": "true",
+                               "TranscriptionData": json.dumps({"transcript": line})})
+
     client.post(url, data={"TranscriptionEvent": "transcription-stopped"})
     assert client.get(f"/sessions/{code}", headers=HEADERS).json()["status"] == "ended"
+
+    # Final analysis runs in the background: wait for it to cover all 3 lines.
+    risk = {}
+    for _ in range(60):
+        risk = client.get(f"/sessions/{code}", headers=HEADERS).json()["risk"]
+        if risk["analyzed_lines"] == 3:
+            break
+        time.sleep(0.5)
+    print("AI result:", risk)
+    assert risk["analyzed_lines"] == 3
+    assert risk["score"] >= 70 and risk["is_scam"]
+    if main.GEMINI_API_KEY:
+        assert risk["source"] == "gemini"
 
 
 if __name__ == "__main__":

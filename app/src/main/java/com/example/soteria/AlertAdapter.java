@@ -70,7 +70,7 @@ public class AlertAdapter extends RecyclerView.Adapter<AlertAdapter.AlertViewHol
             h.status.setVisibility(View.VISIBLE);
         }
 
-        h.time.setText(call.getTimestamp());
+        h.time.setText(CallLogRepository.timeLabel(call));
         h.caller.setText(call.getDisplayName());
         String direction = ctx.getString(call.getDirection() == CallLog.Direction.INCOMING
                 ? R.string.alerts_incoming : R.string.alerts_outgoing);

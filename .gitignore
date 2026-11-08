@@ -7,6 +7,10 @@ build/
 
 # ---- Local config (machine-specific: SDK path, keys) ----
 local.properties
+# Secrets (Gemini API key etc.). Commit .env.example instead.
+.env
+.env.*
+!.env.example
 *.keystore
 *.jks
 google-services.json

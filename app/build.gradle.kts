@@ -14,6 +14,18 @@ val localProps = Properties().apply {
 }
 fun soteriaProp(key: String): String = localProps.getProperty(key, "").trim()
 
+// Secrets shared with the backend live in <repo>/.env (git-ignored), e.g. GEMINI_API_KEY=...
+val dotEnv: Map<String, String> = rootProject.file(".env").let { file ->
+    if (!file.exists()) emptyMap() else file.readLines()
+        .map { it.trim() }
+        .filter { it.isNotEmpty() && !it.startsWith("#") && it.contains("=") }
+        .associate { line ->
+            val (k, v) = line.split("=", limit = 2)
+            k.trim() to v.trim().removeSurrounding("\"").removeSurrounding("'")
+        }
+}
+fun env(key: String, default: String = ""): String = dotEnv[key] ?: System.getenv(key) ?: default
+
 android {
     namespace = "com.example.soteria"
     compileSdk {
@@ -32,6 +44,9 @@ android {
         buildConfigField("String", "LISTENER_NUMBER", "\"${soteriaProp("soteria.listenerNumber")}\"")
         buildConfigField("String", "BACKEND_URL", "\"${soteriaProp("soteria.backendUrl")}\"")
         buildConfigField("String", "API_KEY", "\"${soteriaProp("soteria.apiKey")}\"")
+        // Gemini AI scam analysis (from .env). Empty key = on-phone keyword check only.
+        buildConfigField("String", "GEMINI_API_KEY", "\"${env("GEMINI_API_KEY")}\"")
+        buildConfigField("String", "GEMINI_MODEL", "\"${env("GEMINI_MODEL", "gemini-3.5-flash-lite")}\"")
     }
 
     buildFeatures {

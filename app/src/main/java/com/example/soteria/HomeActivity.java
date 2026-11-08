@@ -383,7 +383,7 @@ public class HomeActivity extends AppCompatActivity {
                     ? "" : " · " + latestAlert.getThreatCategories().get(0);
             ((TextView) findViewById(R.id.latestAlertTitle))
                     .setText(latestAlert.getDisplayName() + reason);
-            ((TextView) findViewById(R.id.latestAlertTime)).setText(latestAlert.getTimestamp());
+            ((TextView) findViewById(R.id.latestAlertTime)).setText(CallLogRepository.timeLabel(latestAlert));
             alertCard.setOnClickListener(v -> open(AlertsActivity.class));
         }
 

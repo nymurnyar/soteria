@@ -52,11 +52,11 @@
 
     <!-- Where the AI runs -->
     <string-array name="ai_mode_entries">
-        <item>On-device (private)</item>
-        <item>Cloud (more accurate)</item>
+        <item>Gemini AI (more accurate, sends transcript to Google)</item>
+        <item>On-device keywords only (private)</item>
     </string-array>
     <string-array name="ai_mode_values" translatable="false">
-        <item>on_device</item>
         <item>cloud</item>
+        <item>on_device</item>
     </string-array>
 </resources>

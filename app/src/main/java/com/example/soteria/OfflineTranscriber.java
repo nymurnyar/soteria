@@ -80,6 +80,8 @@ final class OfflineTranscriber {
     private String lastPartial = "";
     /** We asked the recognizer to wrap up; with piped audio it answers with ERROR_CLIENT. */
     private boolean finalizing;
+    /** We told the listener we're live (first onReadyForSpeech after start). */
+    private boolean announcedReady;
 
     // Our own microphone capture (Android 13+).
     @Nullable private AudioRecord record;
@@ -158,6 +160,7 @@ final class OfflineTranscriber {
                 .putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault().toLanguageTag());
 
         running = true;
+        announcedReady = false;
         consecutiveErrors = 0;
         gotAnyText = false;
         warnedSilenced = false;
@@ -228,7 +231,13 @@ final class OfflineTranscriber {
     }
 
     private final RecognitionListener recognitionListener = new RecognitionListener() {
-        @Override public void onReadyForSpeech(Bundle params) { }
+        @Override
+        public void onReadyForSpeech(Bundle params) {
+            if (running && !announcedReady) {
+                announcedReady = true; // model loaded, mic flowing: "Starting…" -> live
+                listener.onStatus(context.getString(R.string.protection_offline_active));
+            }
+        }
         @Override public void onBeginningOfSpeech() { }
         @Override public void onRmsChanged(float rmsdB) { }
         @Override public void onBufferReceived(byte[] buffer) { }

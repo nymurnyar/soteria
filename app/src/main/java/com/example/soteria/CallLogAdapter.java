@@ -45,7 +45,11 @@ public class CallLogAdapter extends RecyclerView.Adapter<CallLogAdapter.CallView
         holder.meta.setText(String.format(Locale.getDefault(), "%s  ·  %s  ·  %s",
                 call.getTimestamp(), call.getDuration(),
                 call.getDirection() == CallLog.Direction.INCOMING ? "Incoming" : "Outgoing"));
-        holder.identity.setText(call.isInternalCaller() ? "INTERNAL" : "EXTERNAL");
+        // Built-in sample calls are labelled so they're never mistaken for real calls.
+        // Internal/external caller detection is only in the samples (pending for real calls).
+        holder.identity.setText(CallLogRepository.isSample(call)
+                ? (call.isInternalCaller() ? "SAMPLE · INTERNAL" : "SAMPLE · EXTERNAL")
+                : "PROTECTED CALL");
         holder.risk.setText(riskLabel(call.getRisk()));
         holder.risk.setTextColor(riskColor(call.getRisk()));
         holder.risk.setBackgroundTintList(android.content.res.ColorStateList.valueOf(riskBackground(call.getRisk())));

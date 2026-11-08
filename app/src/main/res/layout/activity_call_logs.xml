@@ -98,9 +98,10 @@
                     android:paddingStart="14dp">
 
                     <TextView
+                        android:id="@+id/statTotal"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="24"
+                        tools:text="24"
                         android:textColor="#0B2C5E"
                         android:textSize="21sp"
                         android:textStyle="bold" />
@@ -133,9 +134,10 @@
                     android:paddingStart="14dp">
 
                     <TextView
+                        android:id="@+id/statSafe"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="18"
+                        tools:text="18"
                         android:textColor="#15803D"
                         android:textSize="21sp"
                         android:textStyle="bold" />
@@ -175,9 +177,10 @@
                     android:paddingStart="14dp">
 
                     <TextView
+                        android:id="@+id/statFlagged"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="4"
+                        tools:text="4"
                         android:textColor="#B91C1C"
                         android:textSize="21sp"
                         android:textStyle="bold" />
@@ -210,9 +213,10 @@
                     android:paddingStart="14dp">
 
                     <TextView
+                        android:id="@+id/statMonitoring"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="2"
+                        tools:text="2"
                         android:textColor="#B45309"
                         android:textSize="21sp"
                         android:textStyle="bold" />

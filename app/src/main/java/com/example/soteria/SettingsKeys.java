@@ -149,8 +149,8 @@ public final class SettingsKeys {
         }
     }
 
-    /** "on_device" or "cloud". */
+    /** "cloud" (Gemini AI, sends the transcript to Google) or "on_device" (keyword check only). */
     public static String aiMode(Context context) {
-        return prefs(context).getString(AI_MODE, "on_device");
+        return prefs(context).getString(AI_MODE, "cloud");
     }
 }

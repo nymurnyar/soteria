@@ -44,7 +44,6 @@ public class CallLogsActivity extends AppCompatActivity implements CallLogAdapte
         list.setLayoutManager(new LinearLayoutManager(this));
         adapter = new CallLogAdapter(this);
         list.setAdapter(adapter);
-        allCalls.addAll(CallLogRepository.getCalls(this));
 
         setupFilters();
         EditText search = findViewById(R.id.searchInput);
@@ -56,7 +55,32 @@ public class CallLogsActivity extends AppCompatActivity implements CallLogAdapte
             }
             @Override public void afterTextChanged(Editable s) { }
         });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Reload every time: a call may have just been saved (or its final AI result updated).
+        allCalls.clear();
+        allCalls.addAll(CallLogRepository.getCalls(this));
+        bindStats();
         applyFilters();
+    }
+
+    /** Summary cards: real counts from the saved calls (plus the samples). */
+    private void bindStats() {
+        int safe = 0, flagged = 0, monitoring = 0;
+        for (CallLog call : allCalls) {
+            switch (call.getRisk()) {
+                case FLAGGED: flagged++; break;
+                case MONITORING: monitoring++; break;
+                default: safe++;
+            }
+        }
+        ((TextView) findViewById(R.id.statTotal)).setText(String.valueOf(allCalls.size()));
+        ((TextView) findViewById(R.id.statSafe)).setText(String.valueOf(safe));
+        ((TextView) findViewById(R.id.statFlagged)).setText(String.valueOf(flagged));
+        ((TextView) findViewById(R.id.statMonitoring)).setText(String.valueOf(monitoring));
     }
 
     private void setupFilters() {
@@ -105,14 +129,21 @@ public class CallLogsActivity extends AppCompatActivity implements CallLogAdapte
 
     @Override
     public void onCallClick(CallLog call) {
+        boolean sample = CallLogRepository.isSample(call);
         StringBuilder details = new StringBuilder();
-        details.append("Caller\n").append(call.getDisplayName()).append(" · ").append(call.getPhoneNumber())
+        if (sample) details.append("Sample call (built-in example, not a real call)\n\n");
+        String number = call.getPhoneNumber();
+        details.append("Caller\n").append(call.getDisplayName())
+                .append(number.isEmpty() || number.equals(call.getDisplayName()) ? "" : " · " + number)
                 .append("\n\nDate and time\n").append(call.getTimestamp())
                 .append("\n\nDuration\n").append(call.getDuration())
-                .append("\n\nCaller identity\n").append(call.isInternalCaller() ? "Internal" : "External")
+                .append("\n\nCaller identity\n").append(sample
+                        ? (call.isInternalCaller() ? "Internal" : "External")
+                        : "Not verified (caller verification is pending)")
                 .append("\n\nRisk classification\n").append(riskLabel(call.getRisk()))
                 .append(String.format(Locale.getDefault(), "  (score %.0f%%)", call.getRiskScore() * 100))
-                .append("\n\nSample conversation\n").append(call.getTranscript());
+                .append(sample ? "\n\nSample conversation\n" : "\n\nTranscript\n")
+                .append(call.getTranscript().isEmpty() ? "(nothing transcribed)" : call.getTranscript());
 
         if (!call.getThreatCategories().isEmpty()) {
             details.append("\n\nDetected warning signals");
@@ -122,7 +153,7 @@ public class CallLogsActivity extends AppCompatActivity implements CallLogAdapte
                 ? "\n\nSoteria flagged this conversation because it included suspicious requests or tactics. Never share passwords, administrator credentials, or one-time codes with an unverified caller."
                 : call.getRisk() == CallLog.Risk.MONITORING
                 ? "\n\nSoteria could not fully verify this caller. Confirm their identity using a trusted contact method before sharing sensitive information."
-                : "\n\nNo significant risk signals were detected in this sample conversation.";
+                : "\n\nNo significant risk signals were detected in this conversation.";
         details.append(explanation);
 
         TextView content = new TextView(this);
