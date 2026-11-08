@@ -50,10 +50,11 @@ public final class CallManager {
     }
 
     private static final String TAG = "SoteriaCalls";
-    private static final long PROTECTION_TIMEOUT_MS = 30_000;
+    private static final long PROTECTION_TIMEOUT_MS = 40_000;
     private static final long DTMF_START_DELAY_MS = 1_200;
     private static final long DTMF_TONE_MS = 220;
     private static final long DTMF_GAP_MS = 180;
+    private static final long TRIAL_PROMPT_SKIP_MS = 2_500;
     private static final long LISTENING_POLL_MS = 500;
     private static final long TRANSCRIPT_POLL_MS = 1_500;
     private static final int MAX_MERGE_ATTEMPTS = 6;
@@ -407,8 +408,13 @@ public final class CallManager {
         codeSent = true;
         protectionDetail = app.getString(R.string.protection_verifying);
         notifyChanged();
-        String digits = sessionCode;
+        // "*" first: dismisses Twilio's "trial account, press any key" prompt (harmless on paid
+        // accounts). Then the code, then "#" to submit. The backend reads the last 6 digits.
+        String digits = sessionCode + "#";
         long t = DTMF_START_DELAY_MS;
+        postProtection(() -> { if (listenerCall != null) listenerCall.playDtmfTone('*'); }, t);
+        postProtection(() -> { if (listenerCall != null) listenerCall.stopDtmfTone(); }, t + DTMF_TONE_MS);
+        t += TRIAL_PROMPT_SKIP_MS;
         for (int i = 0; i < digits.length(); i++) {
             char digit = digits.charAt(i);
             postProtection(() -> { if (listenerCall != null) listenerCall.playDtmfTone(digit); }, t);

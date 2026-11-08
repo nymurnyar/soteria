@@ -150,7 +150,7 @@ async def twilio_voice(form: dict = Depends(twilio_form)) -> Response:
     """The Soteria number was dialled: wait silently for the 6-digit session code."""
     action = quoteattr(f"{PUBLIC_BASE_URL}/twilio/joined")
     return _twiml(
-        f'<Gather input="dtmf" numDigits="{CODE_LENGTH}" timeout="15" action={action} method="POST"/>'
+        f'<Gather input="dtmf" finishOnKey="#" timeout="15" action={action} method="POST"/>'
         "<Hangup/>"
     )
 
@@ -158,7 +158,8 @@ async def twilio_voice(form: dict = Depends(twilio_form)) -> Response:
 @app.post("/twilio/joined")
 async def twilio_joined(form: dict = Depends(twilio_form)) -> Response:
     """Code received: start real-time transcription and keep the leg open."""
-    code = form.get("Digits", "")
+    # App sends "*" (skips the trial-account prompt), the code, then "#". Use the last 6 digits.
+    code = re.sub(r"[^0-9]", "", form.get("Digits", ""))[-CODE_LENGTH:]
     with _lock:
         session = _sessions.get(code)
         if session is None or session["status"] != "waiting":
