@@ -9,6 +9,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.Settings;
 import android.telecom.Call;
 import android.telecom.CallAudioState;
 import android.telecom.InCallService;
@@ -17,6 +18,7 @@ import android.telecom.TelecomManager;
 import android.telecom.VideoProfile;
 import android.telephony.PhoneNumberUtils;
 import android.telephony.TelephonyManager;
+import android.text.TextUtils;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
@@ -97,6 +99,13 @@ public final class CallManager {
     private String protectedNumber = "";
     private boolean protectedOutgoing = false;
 
+    // Floating overlay (ScreenZen-style session bubble) for the current call.
+    @Nullable private OverlayManager overlay;
+    @Nullable private CallSessionTimer session;
+    private boolean overlayPrompted = false;       // ask "Protect this call?" once per call
+    private boolean userStoppedProtection = false; // user ended the session: don't auto-restart
+    private Risk overlayRisk = Risk.IDLE;
+
     private CallManager(Context app) {
         this.app = app;
         SoteriaApi.init(app);
@@ -120,6 +129,7 @@ public final class CallManager {
             handleListenerState(call.getState());
             return;
         }
+        if (calls.isEmpty()) resetOverlayForNewCall();
         calls.add(call);
         Log.i(TAG, "Call added, state=" + call.getState());
         if (call.getState() == Call.STATE_RINGING) {
@@ -146,6 +156,7 @@ public final class CallManager {
         if (call == protectedCall) endProtection();
         if (getPrimaryCall() == null) {
             endProtection();
+            closeOverlay();
             CallNotifications.cancel(app);
         } else {
             updateOngoingNotification();
@@ -312,6 +323,7 @@ public final class CallManager {
         updateOngoingNotification();
 
         if (state == Call.STATE_ACTIVE) {
+            maybePromptOverlay();
             if (protectedCall != null && call.getChildren().contains(protectedCall)) {
                 onMerged(); // conference became active
             } else if (protection == Protection.OFF && protectedCall == null && shouldProtect(call)) {
@@ -333,6 +345,7 @@ public final class CallManager {
     // ---- Protection flow -------------------------------------------------------------------
 
     private boolean shouldProtect(Call call) {
+        if (userStoppedProtection) return false;
         if (!ProtectionSettings.isActive(app) || !ProtectionSettings.isConfigured(app)) return false;
         if (call.getDetails().hasProperty(Call.Details.PROPERTY_CONFERENCE)) return false;
         if (isEmergency(call)) {
@@ -510,6 +523,7 @@ public final class CallManager {
             warnedUser = true;
             alertUser();
         }
+        updateOverlayRisk();
     }
 
     @SuppressWarnings("deprecation")
@@ -588,6 +602,99 @@ public final class CallManager {
 
     private void stopProtectionCallbacks() {
         main.removeCallbacksAndMessages(PROTECTION_TOKEN);
+    }
+
+    // ---- Floating overlay ------------------------------------------------------------------
+
+    private boolean overlayAllowed() {
+        return SettingsKeys.showOverlay(app) && Settings.canDrawOverlays(app);
+    }
+
+    private void ensureOverlay() {
+        if (overlay != null) return;
+        overlay = new OverlayManager(app, new OverlayManager.Actions() {
+            @Override public void onStart(int minutes) {
+                session.start(minutes);
+                resumeProtection();
+            }
+            @Override public void onExtend(int minutes) { session.extend(minutes); }
+            @Override public void onEnd() {
+                session.end();
+                stopProtectionByUser();
+            }
+        });
+        final OverlayManager bubble = overlay;
+        // Forward timer events to the bubble; when time runs out, stop listening too.
+        session = new CallSessionTimer(new CallSessionTimer.Listener() {
+            @Override public void onSessionStarted(long totalMs) { bubble.onSessionStarted(totalMs); }
+            @Override public void onTick(long remainingMs) { bubble.onTick(remainingMs); }
+            @Override public void onAboutToExpire(long remainingMs) { bubble.onAboutToExpire(remainingMs); }
+            @Override public void onSessionEnded(boolean timedOut) {
+                bubble.onSessionEnded(timedOut);
+                if (timedOut) stopProtectionByUser();
+            }
+        });
+    }
+
+    /** Once a call is answered, show the bubble and ask how long to monitor (never while ringing). */
+    private void maybePromptOverlay() {
+        if (overlayPrompted || !overlayAllowed()) return;
+        overlayPrompted = true;
+        ensureOverlay();
+        if (!session.isActive()) overlay.showPrompt();
+    }
+
+    /** Session ended (End button or time ran out): drop the listener so the AI stops listening. */
+    private void stopProtectionByUser() {
+        if (getPrimaryCall() == null) return;
+        userStoppedProtection = true;
+        Call original = protectedCall;
+        if (protection == Protection.CONNECTING || protection == Protection.PROTECTED) {
+            endProtection(); // saves what we have so far + hangs up only the listener leg
+        }
+        if (original != null && original.getState() == Call.STATE_HOLDING) original.unhold();
+        protection = Protection.OFF;
+        protectionDetail = "Monitoring off";
+        overlayRisk = Risk.IDLE;
+        updateOngoingNotification();
+        notifyChanged();
+    }
+
+    /** New session started after the user stopped monitoring: add the listener back. */
+    private void resumeProtection() {
+        if (!userStoppedProtection) return;
+        userStoppedProtection = false;
+        if (protectedCall != null) return;
+        Call call = getPrimaryCall();
+        if (call == null) return;
+        if (!call.getChildren().isEmpty()) call = call.getChildren().get(0);
+        if (call.getState() == Call.STATE_ACTIVE && shouldProtect(call)) startProtection(call);
+        notifyChanged();
+    }
+
+    /** New AI result -> recolour the bubble and show why. */
+    private void updateOverlayRisk() {
+        if (overlay == null || getPrimaryCall() == null || !overlayAllowed()) return;
+        Risk level = !isRisky() ? Risk.SAFE
+                : (riskScore >= 70 || riskIsScam) ? Risk.DANGER : Risk.CAUTION;
+        if (level == overlayRisk) return;
+        overlayRisk = level;
+        String reason = !riskSummary.isEmpty() ? riskSummary
+                : riskSigns.isEmpty() ? "Suspicious call" : TextUtils.join(", ", riskSigns);
+        overlay.showWarning(level, reason);
+    }
+
+    /** Call is over: stop the timer and remove the bubble. */
+    private void closeOverlay() {
+        if (session != null) session.end();
+        if (overlay != null) overlay.hide();
+        overlayRisk = Risk.IDLE;
+    }
+
+    private void resetOverlayForNewCall() {
+        overlayPrompted = false;
+        userStoppedProtection = false;
+        overlayRisk = Risk.IDLE;
     }
 
     // ---- Helpers ---------------------------------------------------------------------------

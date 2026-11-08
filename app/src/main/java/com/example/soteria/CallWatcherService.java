@@ -79,6 +79,8 @@ public class CallWatcherService extends Service {
 
     private void handleCallState(int state) {
         if (!Settings.canDrawOverlays(this)) return;
+        // When Soteria is the default phone app, CallManager runs the overlay instead.
+        if (ProtectionSettings.isDefaultDialer(this)) return;
         switch (state) {
             case TelephonyManager.CALL_STATE_RINGING:
             case TelephonyManager.CALL_STATE_OFFHOOK:
