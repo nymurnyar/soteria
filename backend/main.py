@@ -11,7 +11,7 @@ Flow
    starts Twilio real-time transcription, then keeps the leg open silently.
 5. The app sees "listening" and merges the calls into a 3-way conference.
 6. Twilio posts transcription events to ``POST /twilio/transcription``.
-7. Every few final sentences we send the conversation so far to Claude and ask
+7. Every few final sentences we send the conversation so far to gpt-oss and ask
    "Is this a scam? How risky (0-100)? Which warning signs?" and save the answer
    on the session (``risk``).
 8. The app polls ``GET /sessions/{code}`` for new transcript lines + the risk result.
@@ -39,8 +39,15 @@ SOTERIA_API_KEY = os.environ.get("SOTERIA_API_KEY", "")
 VALIDATE_TWILIO = os.environ.get("VALIDATE_TWILIO", "1") != "0"
 LANGUAGE_CODE = os.environ.get("TRANSCRIPTION_LANGUAGE", "en-US")
 
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-haiku-5-5")
+# Scam-analysis model: gpt-oss via any OpenAI-compatible server.
+# Default = LM Studio's local server (Developer tab -> Start Server) with gpt-oss-20b loaded.
+# Ollama: LLM_BASE_URL=http://localhost:11434/v1  LLM_MODEL=gpt-oss:20b
+# Groq:   LLM_BASE_URL=https://api.groq.com/openai/v1  LLM_MODEL=openai/gpt-oss-20b  LLM_API_KEY=...
+LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "http://localhost:1234/v1").rstrip("/")
+LLM_MODEL = os.environ.get("LLM_MODEL", "openai/gpt-oss-20b")
+LLM_API_KEY = os.environ.get("LLM_API_KEY", "lm-studio")
+LLM_ENABLED = os.environ.get("LLM_ENABLED", "1") != "0"
+LLM_TIMEOUT = float(os.environ.get("LLM_TIMEOUT", "45"))
 ANALYZE_EVERY_LINES = int(os.environ.get("ANALYZE_EVERY_LINES", "2"))  # "every few sentences"
 
 SESSION_TTL_SECONDS = 6 * 60 * 60
@@ -200,7 +207,7 @@ async def twilio_transcription(code: str, form: dict = Depends(twilio_form)) -> 
     return {"ok": True}
 
 
-# ---- Scam analysis (Claude) ----------------------------------------------------------------
+# ---- Scam analysis (gpt-oss) ---------------------------------------------------------------
 
 SCAM_PROMPT = """You check live phone-call transcripts for scams and social engineering.
 Both voices are mixed into one transcript and lines are not labelled by speaker.
@@ -211,7 +218,7 @@ threats, one-time code or password requests, remote access apps, upfront fees fo
 permits, impersonating government/bank/police/IT/CRA/IRCC, urgency, secrecy, threats.
 Use risk under 30 for normal conversation, 30-69 for suspicious, 70+ for likely scam."""
 
-# Used when no ANTHROPIC_API_KEY is set, so the demo still works offline.
+# Used when gpt-oss is not reachable, so the demo still works offline.
 KEYWORD_SIGNS = {
     "Gift card or crypto payment": r"gift ?cards?|itunes|google play card|bitcoin|crypto|btc|usdt",
     "Wire / money transfer": r"wire (?:the )?money|western union|moneygram|e-?transfer|send (?:the )?money",
@@ -242,9 +249,9 @@ def _start_analysis(code: str, session: dict) -> None:
 
 def _analyze(code: str, transcript: str, upto: int) -> None:
     try:
-        result = _ask_claude(transcript) if ANTHROPIC_API_KEY else None
-    except Exception as e:  # network / API error: fall back so the app still gets an answer
-        print(f"[soteria] Claude analysis failed: {e}")
+        result = _ask_llm(transcript) if LLM_ENABLED else None
+    except Exception as e:  # model not running / bad JSON: fall back so the app still gets an answer
+        print(f"[soteria] gpt-oss analysis failed: {e}")
         result = None
     if result is None:
         result = _keyword_analysis(transcript)
@@ -263,17 +270,25 @@ def _analyze(code: str, transcript: str, upto: int) -> None:
             _start_analysis(code, session)
 
 
-def _ask_claude(transcript: str) -> dict:
-    import anthropic
+def _ask_llm(transcript: str) -> dict:
+    import urllib.request
 
-    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-    msg = client.messages.create(
-        model=ANTHROPIC_MODEL,
-        max_tokens=400,
-        system=SCAM_PROMPT,
-        messages=[{"role": "user", "content": "Transcript so far:\n" + transcript}],
+    body = json.dumps({
+        "model": LLM_MODEL,
+        "messages": [
+            {"role": "system", "content": SCAM_PROMPT + "\nReasoning: low"},
+            {"role": "user", "content": "Transcript so far:\n" + transcript},
+        ],
+        "temperature": 0,
+        "max_tokens": 1500,  # gpt-oss reasons first; leave room for the JSON answer
+    }).encode()
+    req = urllib.request.Request(
+        LLM_BASE_URL + "/chat/completions", data=body, method="POST",
+        headers={"Content-Type": "application/json", "Authorization": f"Bearer {LLM_API_KEY}"},
     )
-    raw = "".join(getattr(block, "text", "") for block in msg.content)
+    with urllib.request.urlopen(req, timeout=LLM_TIMEOUT) as resp:
+        reply = json.loads(resp.read().decode())
+    raw = reply["choices"][0]["message"].get("content") or ""
     start, end = raw.find("{"), raw.rfind("}")
     data = json.loads(raw[start:end + 1])
     score = max(0, min(100, int(data.get("risk", 0))))
@@ -282,7 +297,7 @@ def _ask_claude(transcript: str) -> dict:
         "is_scam": bool(data.get("is_scam", score >= 70)),
         "signs": [str(x) for x in data.get("signs", [])][:6],
         "summary": str(data.get("summary", "")),
-        "source": "claude",
+        "source": "gpt-oss",
     }
 
 
