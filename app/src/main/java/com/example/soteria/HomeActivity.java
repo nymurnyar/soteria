@@ -83,6 +83,7 @@ public class HomeActivity extends AppCompatActivity {
         pulseRingInner = findViewById(R.id.pulseRingInner);
 
         ((TextView) findViewById(R.id.greetingText)).setText(greetingRes());
+        findViewById(R.id.settingsButton).setOnClickListener(v -> open(SettingsActivity.class));
 
         // TODO: hook up real protection (default dialer + call listener) once features are defined.
         activateButton.setOnClickListener(v -> {

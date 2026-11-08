@@ -63,6 +63,18 @@
                     android:textSize="24sp"
                     android:textStyle="bold" />
             </LinearLayout>
+
+            <!-- Settings shortcut (always visible, no scrolling needed) -->
+            <ImageButton
+                android:id="@+id/settingsButton"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/title_settings"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_settings"
+                app:tint="#102A4C" />
         </LinearLayout>
 
         <!-- Protection hero -->
