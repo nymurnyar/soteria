@@ -1,6 +1,18 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
 }
+
+// Soteria listener config lives in local.properties (not committed):
+//   soteria.listenerNumber=+15551234567
+//   soteria.backendUrl=https://example.ngrok.app
+//   soteria.apiKey=...
+val localProps = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+fun soteriaProp(key: String): String = localProps.getProperty(key, "").trim()
 
 android {
     namespace = "com.example.soteria"
@@ -16,6 +28,14 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "LISTENER_NUMBER", "\"${soteriaProp("soteria.listenerNumber")}\"")
+        buildConfigField("String", "BACKEND_URL", "\"${soteriaProp("soteria.backendUrl")}\"")
+        buildConfigField("String", "API_KEY", "\"${soteriaProp("soteria.apiKey")}\"")
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     buildTypes {

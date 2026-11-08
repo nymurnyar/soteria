@@ -100,6 +100,58 @@
     <string name="alerts_status_reviewed_label">Reviewed</string>
     <string name="alerts_status_false_alarm_label">False alarm</string>
 
+    <!-- Calls -->
+    <string name="call_unknown_caller">Unknown caller</string>
+    <string name="call_state_incoming">Incoming call</string>
+    <string name="call_state_dialing">Calling…</string>
+    <string name="call_state_holding">On hold</string>
+    <string name="call_state_active">Connected</string>
+    <string name="call_state_ended">Call ended</string>
+    <string name="call_live_transcript">LIVE TRANSCRIPT</string>
+    <string name="call_transcript_waiting">Listening… the transcript will appear here.</string>
+    <string name="call_mute">Mute</string>
+    <string name="call_speaker">Speaker</string>
+    <string name="call_answer">Answer</string>
+    <string name="call_decline">Decline</string>
+    <string name="call_hang_up">Hang up</string>
+    <string name="channel_incoming">Incoming calls</string>
+    <string name="channel_ongoing">Ongoing calls</string>
+    <string name="notification_ongoing">Ongoing call</string>
+
+    <!-- Protection (listener merge) -->
+    <string name="protection_off_label">Soteria protection off</string>
+    <string name="protection_ready">Soteria will protect this call</string>
+    <string name="protection_standby">Soteria standing by</string>
+    <string name="protection_connecting">Connecting Soteria…</string>
+    <string name="protection_adding">Adding Soteria to the call…</string>
+    <string name="protection_verifying">Verifying Soteria session…</string>
+    <string name="protection_merging">Merging calls…</string>
+    <string name="protection_active">Protected · Transcribing</string>
+    <string name="protection_listener_left">Soteria left the call</string>
+    <string name="protection_failed_backend">Protection unavailable: server unreachable</string>
+    <string name="protection_failed_dial">Protection unavailable: couldn\'t add Soteria</string>
+    <string name="protection_failed_listener">Protection unavailable: Soteria didn\'t answer</string>
+    <string name="protection_failed_merge">Protection unavailable: carrier can\'t merge calls</string>
+    <string name="protection_failed_timeout">Protection unavailable: timed out</string>
+
+    <!-- Dialer -->
+    <string name="dialer_title">Keypad</string>
+    <string name="dialer_hint">Enter a number</string>
+    <string name="dialer_call">Call</string>
+    <string name="dialer_delete">Delete</string>
+    <string name="dialer_protected">PROTECTED</string>
+    <string name="dialer_unprotected">NOT PROTECTED</string>
+    <string name="dialer_permission_needed">Soteria needs phone permission to place calls.</string>
+
+    <!-- Activation -->
+    <string name="home_keypad_title">Keypad</string>
+    <string name="home_keypad_subtitle">Make a protected call</string>
+    <string name="activation_not_configured_title">Soteria isn\'t configured</string>
+    <string name="activation_not_configured_body">Add soteria.listenerNumber, soteria.backendUrl and soteria.apiKey to local.properties, then rebuild the app. See backend/README.md.</string>
+    <string name="activation_dialer_required">Soteria must be your default phone app to protect calls.</string>
+    <string name="activation_permissions_required">Phone permission is required to protect calls.</string>
+    <string name="activation_off_hint">Protection off. Soteria is still your phone app; you can change it in Settings › Apps › Default apps.</string>
+
     <!-- Placeholder screens -->
     <string name="action_back">Back</string>
     <string name="placeholder_empty">Nothing here yet</string>

@@ -3,10 +3,14 @@ package com.example.soteria;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
+import android.Manifest;
+import android.app.role.RoleManager;
 import android.content.Intent;
-import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
+import android.os.Build;
 import android.os.Bundle;
+import android.telecom.TelecomManager;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,10 +18,14 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.ColorInt;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.StringRes;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
@@ -26,14 +34,12 @@ import androidx.transition.TransitionManager;
 
 import com.google.android.material.button.MaterialButton;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
 /** Front page: protection toggle, overview stats, latest alert and quick access to Logs/Alerts/Settings. */
 public class HomeActivity extends AppCompatActivity {
-
-    private static final String PREFS_NAME = "soteria_prefs";
-    private static final String KEY_ACTIVE = "protection_active";
 
     // Palette (matches the Call Logs screen).
     private static final int NAVY = 0xFF102A4C;
@@ -43,7 +49,25 @@ public class HomeActivity extends AppCompatActivity {
     private static final int RED = 0xFFDC2626;
     private static final int AMBER = 0xFFB45309;
 
-    private SharedPreferences prefs;
+    /** Step 1 of activation: become the default phone app. */
+    private final ActivityResultLauncher<Intent> dialerRoleLauncher =
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+                if (ProtectionSettings.isDefaultDialer(this)) {
+                    requestPermissionsThenEnable();
+                } else {
+                    Toast.makeText(this, R.string.activation_dialer_required, Toast.LENGTH_LONG).show();
+                }
+            });
+
+    /** Step 2 of activation: phone (required) + notifications (for incoming-call screen). */
+    private final ActivityResultLauncher<String[]> permissionsLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), granted -> {
+                if (hasPermission(Manifest.permission.CALL_PHONE)) {
+                    setProtection(true);
+                } else {
+                    Toast.makeText(this, R.string.activation_permissions_required, Toast.LENGTH_LONG).show();
+                }
+            });
 
     private ViewGroup heroCard;
     private View heroIconBg;
@@ -71,8 +95,6 @@ public class HomeActivity extends AppCompatActivity {
             return insets;
         });
 
-        prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-
         heroCard = findViewById(R.id.heroCard);
         heroIconBg = findViewById(R.id.heroIconBg);
         heroIcon = findViewById(R.id.heroIcon);
@@ -84,26 +106,77 @@ public class HomeActivity extends AppCompatActivity {
 
         ((TextView) findViewById(R.id.greetingText)).setText(greetingRes());
 
-        // TODO: hook up real protection (default dialer + call listener) once features are defined.
         activateButton.setOnClickListener(v -> {
-            boolean active = !prefs.getBoolean(KEY_ACTIVE, false);
-            prefs.edit().putBoolean(KEY_ACTIVE, active).apply();
-            v.performHapticFeedback(android.os.Build.VERSION.SDK_INT >= 30
-                    ? HapticFeedbackConstants.CONFIRM : HapticFeedbackConstants.VIRTUAL_KEY);
-            TransitionManager.beginDelayedTransition(heroCard);
-            renderProtection(active);
-            Toast.makeText(this, active ? R.string.home_protection_on_toast
-                    : R.string.home_protection_off_toast, Toast.LENGTH_SHORT).show();
+            if (ProtectionSettings.isActive(this)) {
+                setProtection(false);
+            } else {
+                startActivation();
+            }
         });
 
-        renderProtection(prefs.getBoolean(KEY_ACTIVE, false));
+        renderProtection(ProtectionSettings.isActive(this));
+    }
+
+    // ---- Activation ------------------------------------------------------------------------
+
+    private void startActivation() {
+        if (!ProtectionSettings.isConfigured()) {
+            new AlertDialog.Builder(this)
+                    .setTitle(R.string.activation_not_configured_title)
+                    .setMessage(R.string.activation_not_configured_body)
+                    .setPositiveButton(android.R.string.ok, null)
+                    .show();
+            return;
+        }
+        if (ProtectionSettings.isDefaultDialer(this)) {
+            requestPermissionsThenEnable();
+            return;
+        }
+        Intent request;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            RoleManager roles = getSystemService(RoleManager.class);
+            request = roles.createRequestRoleIntent(RoleManager.ROLE_DIALER);
+        } else {
+            request = new Intent(TelecomManager.ACTION_CHANGE_DEFAULT_DIALER)
+                    .putExtra(TelecomManager.EXTRA_CHANGE_DEFAULT_DIALER_PACKAGE_NAME, getPackageName());
+        }
+        dialerRoleLauncher.launch(request);
+    }
+
+    private void requestPermissionsThenEnable() {
+        List<String> needed = new ArrayList<>();
+        if (!hasPermission(Manifest.permission.CALL_PHONE)) needed.add(Manifest.permission.CALL_PHONE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                && !hasPermission(Manifest.permission.POST_NOTIFICATIONS)) {
+            needed.add(Manifest.permission.POST_NOTIFICATIONS);
+        }
+        if (needed.isEmpty()) {
+            setProtection(true);
+        } else {
+            permissionsLauncher.launch(needed.toArray(new String[0]));
+        }
+    }
+
+    private boolean hasPermission(String permission) {
+        return ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private void setProtection(boolean active) {
+        ProtectionSettings.setEnabled(this, active);
+        activateButton.performHapticFeedback(Build.VERSION.SDK_INT >= 30
+                ? HapticFeedbackConstants.CONFIRM : HapticFeedbackConstants.VIRTUAL_KEY);
+        TransitionManager.beginDelayedTransition(heroCard);
+        renderProtection(active);
+        Toast.makeText(this, active ? R.string.home_protection_on_toast
+                : R.string.activation_off_hint, active ? Toast.LENGTH_SHORT : Toast.LENGTH_LONG).show();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        // Refresh every time we come back, e.g. after reviewing alerts.
+        // Refresh every time we come back, e.g. after reviewing alerts or changing the default phone app.
         bindOverview(CallLogRepository.getDemoCalls());
+        renderProtection(ProtectionSettings.isActive(this));
     }
 
     // ---- Protection hero -------------------------------------------------------------------
@@ -205,6 +278,9 @@ public class HomeActivity extends AppCompatActivity {
                         ? getString(R.string.home_alerts_subtitle_some, openAlerts.size())
                         : getString(R.string.home_alerts_subtitle_none),
                 openAlerts.size(), AlertsActivity.class);
+        bindAction(R.id.actionKeypad, R.drawable.ic_dialpad, GREEN, 0xFFDCFCE7,
+                getString(R.string.home_keypad_title),
+                getString(R.string.home_keypad_subtitle), 0, DialerActivity.class);
         bindAction(R.id.actionSettings, R.drawable.ic_settings, SLATE, 0xFFF1F5F9,
                 getString(R.string.title_settings),
                 getString(R.string.home_settings_subtitle), 0, SettingsActivity.class);

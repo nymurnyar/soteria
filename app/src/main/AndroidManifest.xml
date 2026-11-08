@@ -4,6 +4,16 @@
 
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
+    <!-- Phone app + listener merge -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CALL_PHONE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+
+    <uses-feature
+        android:name="android.hardware.telephony"
+        android:required="false" />
+
     <!-- Required on Android 11+ so SpeechRecognizer can see the system recognition service. -->
     <queries>
         <intent>
@@ -45,6 +55,51 @@
             android:name=".SettingsActivity"
             android:exported="false"
             android:parentActivityName=".HomeActivity" />
+        <!-- Default phone app: keypad (must handle ACTION_DIAL) -->
+        <activity
+            android:name=".DialerActivity"
+            android:exported="true"
+            android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.DIAL" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.DIAL" />
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="tel" />
+            </intent-filter>
+        </activity>
+
+        <!-- Incoming / ongoing call screen -->
+        <activity
+            android:name=".InCallActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:showWhenLocked="true"
+            android:taskAffinity="com.example.soteria.incall"
+            android:turnScreenOn="true" />
+
+        <!-- Bound by Telecom while Soteria is the default phone app -->
+        <service
+            android:name=".SoteriaInCallService"
+            android:exported="true"
+            android:permission="android.permission.BIND_INCALL_SERVICE">
+            <meta-data
+                android:name="android.telecom.IN_CALL_SERVICE_UI"
+                android:value="true" />
+            <intent-filter>
+                <action android:name="android.telecom.InCallService" />
+            </intent-filter>
+        </service>
+
+        <receiver
+            android:name=".CallActionReceiver"
+            android:exported="false" />
+
         <!-- Speech-to-text test screen (not linked from Home for now). -->
         <activity
             android:name=".MainActivity"
