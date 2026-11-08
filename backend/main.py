@@ -31,12 +31,11 @@ import re
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import Response
-from twilio.request_validator import RequestValidator
 
 PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "").rstrip("/")  # e.g. https://abc.ngrok.app
 TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "")
 SOTERIA_API_KEY = os.environ.get("SOTERIA_API_KEY", "")
-VALIDATE_TWILIO = os.environ.get("VALIDATE_TWILIO", "1") != "0"
+VALIDATE_TWILIO = os.environ.get("VALIDATE_TWILIO", "0") != "0"  # set to 1 (and pip install twilio) for production
 LANGUAGE_CODE = os.environ.get("TRANSCRIPTION_LANGUAGE", "en-US")
 
 # Scam-analysis model: gpt-oss via any OpenAI-compatible server.
@@ -96,6 +95,7 @@ async def twilio_form(request: Request) -> dict:
         if request.url.query:
             url += "?" + request.url.query
         signature = request.headers.get("X-Twilio-Signature", "")
+        from twilio.request_validator import RequestValidator  # optional dependency
         if not RequestValidator(TWILIO_AUTH_TOKEN).validate(url, form, signature):
             raise HTTPException(403, "Invalid Twilio signature")
     return form
