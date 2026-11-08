@@ -11,7 +11,10 @@ Flow
    starts Twilio real-time transcription, then keeps the leg open silently.
 5. The app sees "listening" and merges the calls into a 3-way conference.
 6. Twilio posts transcription events to ``POST /twilio/transcription``.
-7. The app polls ``GET /sessions/{code}`` for new transcript lines.
+7. Every few final sentences we send the conversation so far to Claude and ask
+   "Is this a scam? How risky (0-100)? Which warning signs?" and save the answer
+   on the session (``risk``).
+8. The app polls ``GET /sessions/{code}`` for new transcript lines + the risk result.
 
 Sessions are kept in memory -- fine for a prototype, use Redis/DB in production.
 """
@@ -24,6 +27,8 @@ import time
 from typing import Dict, Optional
 from xml.sax.saxutils import quoteattr
 
+import re
+
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import Response
 from twilio.request_validator import RequestValidator
@@ -33,6 +38,10 @@ TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "")
 SOTERIA_API_KEY = os.environ.get("SOTERIA_API_KEY", "")
 VALIDATE_TWILIO = os.environ.get("VALIDATE_TWILIO", "1") != "0"
 LANGUAGE_CODE = os.environ.get("TRANSCRIPTION_LANGUAGE", "en-US")
+
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-haiku-5-5")
+ANALYZE_EVERY_LINES = int(os.environ.get("ANALYZE_EVERY_LINES", "2"))  # "every few sentences"
 
 SESSION_TTL_SECONDS = 6 * 60 * 60
 CODE_LENGTH = 6
@@ -98,6 +107,9 @@ def create_session() -> dict:
             "call_sid": None,
             "lines": [],
             "partial": "",
+            "risk": _empty_risk(),
+            "analyzing": False,
+            "analyzed_upto": 0,
         }
     return {"code": code}
 
@@ -115,6 +127,7 @@ def get_session(code: str, after: int = 0) -> dict:
             "lines": lines[after:],
             "next": len(lines),
             "partial": session["partial"],
+            "risk": session["risk"],
         }
 
 
@@ -174,10 +187,113 @@ async def twilio_transcription(code: str, form: dict = Depends(twilio_form)) -> 
             if form.get("Final", "false").lower() == "true":
                 if text:
                     session["lines"].append(text)
+                    if len(session["lines"]) - session["analyzed_upto"] >= ANALYZE_EVERY_LINES:
+                        _start_analysis(code, session)
                 session["partial"] = ""
             else:
                 session["partial"] = text
         elif event in ("transcription-stopped", "transcription-error"):
             session["status"] = "ended"
             session["partial"] = ""
+            if len(session["lines"]) > session["analyzed_upto"]:
+                _start_analysis(code, session)
     return {"ok": True}
+
+
+# ---- Scam analysis (Claude) ----------------------------------------------------------------
+
+SCAM_PROMPT = """You check live phone-call transcripts for scams and social engineering.
+Both voices are mixed into one transcript and lines are not labelled by speaker.
+Reply with ONLY a JSON object, no other text:
+{"is_scam": true/false, "risk": <integer 0-100>, "signs": ["short warning sign", ...], "summary": "<one short sentence>"}
+Warning signs to look for include: gift card or crypto payment, wire transfers, deportation or arrest
+threats, one-time code or password requests, remote access apps, upfront fees for jobs, LMIAs and work
+permits, impersonating government/bank/police/IT/CRA/IRCC, urgency, secrecy, threats.
+Use risk under 30 for normal conversation, 30-69 for suspicious, 70+ for likely scam."""
+
+# Used when no ANTHROPIC_API_KEY is set, so the demo still works offline.
+KEYWORD_SIGNS = {
+    "Gift card or crypto payment": r"gift ?cards?|itunes|google play card|bitcoin|crypto|btc|usdt",
+    "Wire / money transfer": r"wire (?:the )?money|western union|moneygram|e-?transfer|send (?:the )?money",
+    "Arrest or deportation threat": r"arrest|warrant|deport|police will|jail|immigration (?:status|officer)",
+    "One-time code request": r"(?:verification|one[- ]time|security|6[- ]digit) code|read (?:me )?the code|otp",
+    "Password / login request": r"password|pin number|login details|sign[- ]in details",
+    "Remote access request": r"anydesk|teamviewer|remote access|install (?:this|an) app|screen ?share",
+    "Upfront fee for job / LMIA / work permit": r"lmia|work permit|processing fee|registration fee|pay (?:a |the )?fee",
+    "Government / bank impersonation": r"\bcra\b|revenue agency|ircc|service canada|social insurance|\bsin\b|your bank|fraud department",
+    "Urgency or secrecy": r"right now|immediately|urgent|don'?t tell|keep this (?:between|secret)|within (?:the next )?\d+ (?:minutes|hours)",
+}
+
+
+def _empty_risk() -> dict:
+    return {"score": 0, "is_scam": False, "signs": [], "summary": "", "analyzed_lines": 0,
+            "source": "none"}
+
+
+def _start_analysis(code: str, session: dict) -> None:
+    """Called with _lock held. Runs at most one analysis per session at a time."""
+    if session["analyzing"]:
+        return
+    session["analyzing"] = True
+    transcript = "\n".join(session["lines"])
+    upto = len(session["lines"])
+    threading.Thread(target=_analyze, args=(code, transcript, upto), daemon=True).start()
+
+
+def _analyze(code: str, transcript: str, upto: int) -> None:
+    try:
+        result = _ask_claude(transcript) if ANTHROPIC_API_KEY else None
+    except Exception as e:  # network / API error: fall back so the app still gets an answer
+        print(f"[soteria] Claude analysis failed: {e}")
+        result = None
+    if result is None:
+        result = _keyword_analysis(transcript)
+    result["analyzed_lines"] = upto
+    with _lock:
+        session = _sessions.get(code)
+        if session is None:
+            return
+        session["risk"] = result
+        session["analyzing"] = False
+        session["analyzed_upto"] = upto
+        # More lines may have arrived while we were waiting on the AI.
+        if session["status"] != "listening" and len(session["lines"]) > upto:
+            _start_analysis(code, session)
+        elif len(session["lines"]) - upto >= ANALYZE_EVERY_LINES:
+            _start_analysis(code, session)
+
+
+def _ask_claude(transcript: str) -> dict:
+    import anthropic
+
+    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    msg = client.messages.create(
+        model=ANTHROPIC_MODEL,
+        max_tokens=400,
+        system=SCAM_PROMPT,
+        messages=[{"role": "user", "content": "Transcript so far:\n" + transcript}],
+    )
+    raw = "".join(getattr(block, "text", "") for block in msg.content)
+    start, end = raw.find("{"), raw.rfind("}")
+    data = json.loads(raw[start:end + 1])
+    score = max(0, min(100, int(data.get("risk", 0))))
+    return {
+        "score": score,
+        "is_scam": bool(data.get("is_scam", score >= 70)),
+        "signs": [str(x) for x in data.get("signs", [])][:6],
+        "summary": str(data.get("summary", "")),
+        "source": "claude",
+    }
+
+
+def _keyword_analysis(transcript: str) -> dict:
+    text = transcript.lower()
+    signs = [name for name, pattern in KEYWORD_SIGNS.items() if re.search(pattern, text)]
+    score = min(95, 35 * len(signs))
+    return {
+        "score": score,
+        "is_scam": score >= 70,
+        "signs": signs,
+        "summary": ("Possible scam: " + ", ".join(signs).lower()) if signs else "No warning signs yet.",
+        "source": "keywords",
+    }

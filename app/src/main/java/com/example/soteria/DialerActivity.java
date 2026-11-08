@@ -86,7 +86,7 @@ public class DialerActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         TextView badge = findViewById(R.id.protectionBadge);
-        boolean active = ProtectionSettings.isActive(this) && ProtectionSettings.isConfigured();
+        boolean active = ProtectionSettings.isActive(this) && ProtectionSettings.isConfigured(this);
         badge.setText(active ? R.string.dialer_protected : R.string.dialer_unprotected);
         badge.setTextColor(active ? 0xFF15803D : 0xFF64748B);
         badge.setBackgroundTintList(ColorStateList.valueOf(active ? 0xFFDCFCE7 : 0xFFF1F5F9));

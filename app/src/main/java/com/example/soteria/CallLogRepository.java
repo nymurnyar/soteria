@@ -11,6 +11,13 @@ import java.util.Locale;
 public final class CallLogRepository {
     private CallLogRepository() { }
 
+    /** Real protected calls saved on this phone (newest first), then the demo calls. */
+    public static List<CallLog> getCalls(android.content.Context context) {
+        List<CallLog> calls = new ArrayList<>(CallHistoryStore.load(context));
+        calls.addAll(getDemoCalls());
+        return calls;
+    }
+
     public static List<CallLog> getDemoCalls() {
         List<CallLog> calls = new ArrayList<>();
         calls.add(call("demo-001", "Alex Morgan", "+1 780 555 0142", 0, "10:42 AM",

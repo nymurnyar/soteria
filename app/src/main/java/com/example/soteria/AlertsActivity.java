@@ -65,7 +65,7 @@ public class AlertsActivity extends AppCompatActivity implements AlertAdapter.Li
         }
 
         store = new AlertStore(this);
-        calls = CallLogRepository.getDemoCalls();
+        calls = CallLogRepository.getCalls(this);
 
         findViewById(R.id.backButton).setOnClickListener(v -> finish());
         list = findViewById(R.id.alertList);
