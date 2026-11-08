@@ -44,7 +44,7 @@
                 android:id="@+id/sheetTime"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="#64748B"
+                android:textColor="#5E6E84"
                 android:textSize="12sp"
                 tools:text="Yesterday · 4:18 PM" />
         </LinearLayout>
@@ -54,7 +54,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:textColor="#102A4C"
+            android:textColor="#0B2C5E"
             android:textSize="22sp"
             android:textStyle="bold"
             tools:text="Unknown Caller" />
@@ -64,7 +64,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
-            android:textColor="#64748B"
+            android:textColor="#5E6E84"
             android:textSize="14sp"
             tools:text="Private number" />
 
@@ -86,7 +86,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
             android:text="@string/alerts_why_title"
-            android:textColor="#102A4C"
+            android:textColor="#0B2C5E"
             android:textSize="15sp"
             android:textStyle="bold" />
 
@@ -105,7 +105,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
             android:text="@string/alerts_todo_title"
-            android:textColor="#102A4C"
+            android:textColor="#0B2C5E"
             android:textSize="15sp"
             android:textStyle="bold" />
 
@@ -124,7 +124,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
             android:text="@string/alerts_excerpt_title"
-            android:textColor="#102A4C"
+            android:textColor="#0B2C5E"
             android:textSize="15sp"
             android:textStyle="bold" />
 

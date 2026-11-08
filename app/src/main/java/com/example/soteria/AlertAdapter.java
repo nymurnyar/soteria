@@ -66,7 +66,7 @@ public class AlertAdapter extends RecyclerView.Adapter<AlertAdapter.AlertViewHol
             stylePill(h.status,
                     ctx.getString(falseAlarm ? R.string.alerts_status_false_alarm : R.string.alerts_status_reviewed),
                     falseAlarm ? 0xFF475569 : 0xFF15803D,
-                    falseAlarm ? 0xFFF1F5F9 : 0xFFDCFCE7);
+                    falseAlarm ? 0xFFEEF4ED : 0xFFDCFCE7);
             h.status.setVisibility(View.VISIBLE);
         }
 
@@ -82,7 +82,7 @@ public class AlertAdapter extends RecyclerView.Adapter<AlertAdapter.AlertViewHol
         int percent = (int) Math.round(call.getRiskScore() * 100);
         h.riskBar.setProgressCompat(percent, false);
         h.riskBar.setIndicatorColor(sev.accent);
-        h.riskBar.setTrackColor(0xFFEEF2F7);
+        h.riskBar.setTrackColor(0xFFEDF4EC);
         h.riskPercent.setText(percent + "%");
         h.riskPercent.setTextColor(sev.text);
 
@@ -99,7 +99,7 @@ public class AlertAdapter extends RecyclerView.Adapter<AlertAdapter.AlertViewHol
             h.resolve.setText(R.string.alerts_action_reopen);
             h.resolve.setOnClickListener(v -> listener.onReopen(call));
         }
-        h.resolve.setTextColor(0xFF102A4C);
+        h.resolve.setTextColor(0xFF0B2C5E);
         h.details.setOnClickListener(v -> listener.onDetails(call));
         h.itemView.setOnClickListener(v -> listener.onDetails(call));
         h.itemView.setContentDescription(ctx.getString(sev.label) + ". " + call.getDisplayName()
@@ -129,7 +129,7 @@ public class AlertAdapter extends RecyclerView.Adapter<AlertAdapter.AlertViewHol
         chip.setChipMinHeight(28 * density);
         chip.setTextSize(12);
         chip.setTextColor(0xFF334155);
-        chip.setChipBackgroundColor(ColorStateList.valueOf(0xFFF1F5F9));
+        chip.setChipBackgroundColor(ColorStateList.valueOf(0xFFEEF4ED));
         chip.setChipStrokeWidth(0);
         return chip;
     }

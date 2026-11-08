@@ -1,7 +1,25 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.Soteria" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+    <!-- Base application theme: light Soteria palette (navy + leaf green from the logo). -->
+    <style name="Base.Theme.Soteria" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/soteria_green</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorPrimaryContainer">@color/soteria_green_soft</item>
+        <item name="colorOnPrimaryContainer">@color/soteria_navy</item>
+        <item name="colorSecondary">@color/soteria_navy</item>
+        <item name="colorOnSecondary">@color/white</item>
+        <item name="colorSecondaryContainer">@color/soteria_tile</item>
+        <item name="colorOnSecondaryContainer">@color/soteria_navy</item>
+        <item name="colorTertiary">@color/soteria_green_dark</item>
+        <item name="android:colorBackground">@color/soteria_mint_bg</item>
+        <item name="colorSurface">@color/white</item>
+        <item name="colorOnSurface">@color/soteria_navy</item>
+        <item name="colorOnSurfaceVariant">@color/soteria_slate</item>
+        <item name="colorOutline">@color/soteria_stroke</item>
+        <item name="colorSurfaceContainer">@color/soteria_tile</item>
+        <item name="android:windowBackground">@color/soteria_mint_bg</item>
+        <item name="android:statusBarColor" tools:targetApi="21">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="23">true</item>
     </style>
+
+    <style name="Theme.Soteria" parent="Base.Theme.Soteria" />
 </resources>

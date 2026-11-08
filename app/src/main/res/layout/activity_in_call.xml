@@ -39,10 +39,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:background="#1E3A5F"
+        android:background="#1B4479"
         android:paddingHorizontal="14dp"
         android:paddingVertical="6dp"
-        android:textColor="#E3F2FD"
+        android:textColor="#E3F1E1"
         android:textSize="14sp"
         android:visibility="gone" />
 

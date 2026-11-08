@@ -5,7 +5,7 @@
     android:id="@+id/alertsRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F7FAFF"
+    android:background="#F3F8F2"
     android:orientation="vertical"
     tools:context=".AlertsActivity">
 
@@ -27,7 +27,7 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/action_back"
             android:src="@drawable/ic_arrow_back"
-            app:tint="#102A4C" />
+            app:tint="#0B2C5E" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -40,7 +40,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/title_alerts"
-                android:textColor="#102A4C"
+                android:textColor="#0B2C5E"
                 android:textSize="24sp"
                 android:textStyle="bold" />
 
@@ -49,7 +49,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="@string/alerts_subtitle"
-                android:textColor="#64748B"
+                android:textColor="#5E6E84"
                 android:textSize="14sp" />
         </LinearLayout>
     </LinearLayout>
@@ -165,7 +165,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:textColor="#102A4C"
+                android:textColor="#0B2C5E"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 tools:text="All clear" />
@@ -176,7 +176,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
                 android:gravity="center"
-                android:textColor="#64748B"
+                android:textColor="#5E6E84"
                 android:textSize="14sp"
                 tools:text="No open alerts." />
         </LinearLayout>
