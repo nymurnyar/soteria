@@ -46,19 +46,30 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         Preference addContact = findPreference("add_contact");
         if (addContact != null) {
             addContact.setOnPreferenceClickListener(p -> {
-                contactPicker.launch(new Intent(Intent.ACTION_PICK,
-                        ContactsContract.CommonDataKinds.Phone.CONTENT_URI));
+                try {
+                    contactPicker.launch(new Intent(Intent.ACTION_PICK,
+                            ContactsContract.CommonDataKinds.Phone.CONTENT_URI));
+                } catch (android.content.ActivityNotFoundException e) {
+                    android.widget.Toast.makeText(requireContext(), "No contacts app found",
+                            android.widget.Toast.LENGTH_SHORT).show();
+                }
                 return true;
             });
         }
 
         String packageUri = "package:" + requireContext().getPackageName();
+        openOnClick("perm_a11y", new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
         openOnClick("perm_overlay",
                 new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse(packageUri)));
         openOnClick("perm_mic",
                 new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse(packageUri)));
-        openOnClick("perm_notifications",
-                new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS));
+        // Soteria posts call notifications; it has no notification listener, so open its own
+        // notification settings (the listener screen could never show "Granted").
+        Intent notificationSettings = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O
+                ? new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                        .putExtra(Settings.EXTRA_APP_PACKAGE, requireContext().getPackageName())
+                : new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse(packageUri));
+        openOnClick("perm_notifications", notificationSettings);
 
         showContacts();
     }
@@ -74,9 +85,19 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         Preference pref = findPreference(key);
         if (pref != null) {
             pref.setOnPreferenceClickListener(p -> {
-                startActivity(intent);
+                tryStart(intent);
                 return true;
             });
+        }
+    }
+
+    /** Some devices don't have every settings screen; don't crash if one is missing. */
+    private void tryStart(Intent intent) {
+        try {
+            startActivity(intent);
+        } catch (android.content.ActivityNotFoundException e) {
+            startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.parse("package:" + requireContext().getPackageName())));
         }
     }
 
@@ -144,9 +165,13 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         boolean overlay = Settings.canDrawOverlays(context);
         boolean mic = ContextCompat.checkSelfPermission(context,
                 Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED;
-        boolean notifications = NotificationManagerCompat.getEnabledListenerPackages(context)
-                .contains(context.getPackageName());
+        boolean notifications = NotificationManagerCompat.from(context).areNotificationsEnabled();
 
+        Preference a11y = findPreference("perm_a11y");
+        if (a11y != null) {
+            a11y.setSummary(SoteriaAccessibilityService.isEnabled(context)
+                    ? R.string.pref_perm_granted : R.string.pref_perm_a11y_missing);
+        }
         setStatus("perm_overlay", overlay);
         setStatus("perm_mic", mic);
         setStatus("perm_notifications", notifications);

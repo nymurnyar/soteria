@@ -112,6 +112,20 @@
             </intent-filter>
         </service>
 
+        <!-- Offline transcription: Android only lets accessibility services use the mic during calls. -->
+        <service
+            android:name=".SoteriaAccessibilityService"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/soteria_accessibility_service" />
+        </service>
+
         <receiver
             android:name=".CallActionReceiver"
             android:exported="false" />

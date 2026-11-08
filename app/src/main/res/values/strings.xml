@@ -133,6 +133,22 @@
     <string name="protection_verifying">Verifying Soteria session…</string>
     <string name="protection_merging">Merging calls…</string>
     <string name="protection_active">Protected · Transcribing</string>
+    <string name="protection_offline_active">Protected · Offline transcription</string>
+    <string name="protection_offline_starting">Starting offline transcription…</string>
+    <string name="protection_offline_failed">Offline transcription stopped: %1$s</string>
+    <string name="call_offline_start">Transcribe offline</string>
+    <string name="call_offline_stop">Stop offline</string>
+    <string name="offline_access_title">Turn on offline transcription</string>
+    <string name="offline_access_body">Android only lets accessibility services hear the microphone during a call.\n\nIn the next screen open “Installed apps” (or “Downloaded apps”) › Soteria and switch it on.\n\nIf the switch is greyed out: Settings › Apps › Soteria › ⋮ › Allow restricted settings, then try again.\n\nThe call goes on speaker so the phone can hear both voices.</string>
+    <string name="offline_access_open">Open settings</string>
+    <string name="offline_mic_required">Microphone permission is needed for offline transcription.</string>
+    <string name="offline_unavailable">Speech recognition isn\'t available on this phone</string>
+    <string name="offline_model_downloading">Downloading speech model…</string>
+    <string name="offline_silenced">the phone is blocking the microphone during calls</string>
+    <string name="a11y_service_description">Lets Soteria hear the microphone during calls so it can transcribe them offline on this phone and warn you about scams. Soteria does not read your screen.</string>
+    <string name="pref_transcription_mode_title">Transcription</string>
+    <string name="pref_perm_a11y_title">Offline transcription access</string>
+    <string name="pref_perm_a11y_missing">Off. Tap to turn on (Accessibility)</string>
     <string name="protection_listener_left">Soteria left the call</string>
     <string name="protection_failed_backend">Protection unavailable: server unreachable</string>
     <string name="protection_failed_dial">Protection unavailable: couldn\'t add Soteria</string>
@@ -152,10 +168,32 @@
     <!-- Activation -->
     <string name="home_keypad_title">Keypad</string>
     <string name="home_keypad_subtitle">Make a protected call</string>
-    <string name="activation_not_configured_title">Soteria isn\'t configured</string>
-    <string name="activation_not_configured_body">Add soteria.listenerNumber, soteria.backendUrl and soteria.apiKey to local.properties, then rebuild the app. See backend/README.md.</string>
+    <string name="mode_step">STEP 1 OF 3</string>
+    <string name="mode_choose_title">How should Soteria listen to calls?</string>
+    <string name="mode_choose_subtitle">Pick how calls are transcribed so Soteria can spot scams.</string>
+    <string name="mode_badge_recommended">RECOMMENDED</string>
+    <string name="mode_badge_soon">COMING SOON</string>
+    <string name="mode_offline_title">Offline on this phone</string>
+    <string name="mode_offline_desc">Transcribes calls on the phone using speakerphone.</string>
+    <string name="mode_offline_points">✓ No internet or setup needed\n✓ Nothing leaves the phone\n✓ Works on any carrier</string>
+    <string name="mode_twilio_title">Twilio listening line</string>
+    <string name="mode_twilio_desc">A secure line joins the call and hears both voices clearly.</string>
+    <string name="mode_twilio_points">• Needs a Twilio number + Soteria server\n• AI scam analysis in the cloud</string>
+    <string name="mode_continue_offline">Continue with Offline</string>
+    <string name="mode_continue_twilio">Continue with Twilio</string>
+    <string name="mode_selected">Selected</string>
+    <string name="mode_not_selected">Not selected</string>
+    <string name="mode_change_later">You can change this any time in Settings › Transcription</string>
+    <string name="activation_not_configured_title">Twilio isn\'t set up yet</string>
+    <string name="activation_not_configured_body">The Twilio listening line is still being built. Choose “Offline on this phone” for now, or set the TrustLine number and backend URL in Settings (see backend/README.md).</string>
     <string name="activation_dialer_required">Soteria must be your default phone app to protect calls.</string>
     <string name="activation_permissions_required">Phone permission is required to protect calls.</string>
+    <string name="consent_title">Before you turn on protection</string>
+    <string name="consent_body">When protection is on, Soteria adds a listening line to your calls:\n\n• Each call is transcribed live by Twilio.\n• The transcript is sent to Soteria\'s server and checked by AI for signs of a scam.\n• Transcripts and risk results are saved in Logs and Alerts on this phone.\n\nIn many places, the law requires the other person to be told that a call is recorded or transcribed. You are responsible for getting their consent.\n\nEmergency calls are never monitored. You can turn protection off at any time.</string>
+    <string name="consent_body_offline">When protection is on, Soteria listens to your calls on this phone:\n\n• Calls are put on speaker and transcribed live on the phone. Nothing is sent to the internet.\n• The transcript is checked on the phone for signs of a scam.\n• Transcripts and risk results are saved in Logs and Alerts on this phone.\n\nIn many places, the law requires the other person to be told that a call is recorded or transcribed. You are responsible for getting their consent.\n\nEmergency calls are never monitored. You can turn protection off at any time.</string>
+    <string name="consent_checkbox">I understand and agree to call monitoring</string>
+    <string name="consent_agree">Agree and turn on</string>
+    <string name="consent_required">Protection stays off until you agree.</string>
     <string name="activation_off_hint">Protection off. Soteria is still your phone app; you can change it in Settings › Apps › Default apps.</string>
 
     <!-- Placeholder screens -->

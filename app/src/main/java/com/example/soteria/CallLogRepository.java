@@ -48,7 +48,7 @@ public final class CallLogRepository {
                 "01:43", CallLog.Risk.MONITORING, 0.62, false, CallLog.Direction.INCOMING,
                 "Caller: Hello, can you hear me?\nSoteria: No verified identity information was available.",
                 new String[]{"Unverified caller identity"}));
-        calls.add(call("demo-008", "Sarah Thompson", "+1 780 555 0106", 7, "Yesterday, 3:16 PM",
+        calls.add(call("demo-008", "Sarah Thompson", "+1 780 555 0106", 7, "3:16 PM",
                 "07:30", CallLog.Risk.SAFE, 0.04, true, CallLog.Direction.OUTGOING,
                 "You: I have a quick update for you.\nCaller: Great, go ahead.",
                 new String[0]));

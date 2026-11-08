@@ -30,6 +30,19 @@
             app:summary="@string/pref_auto_start_unknown_summary"
             app:title="@string/pref_auto_start_unknown_title" />
 
+        <ListPreference
+            app:defaultValue="offline"
+            app:entries="@array/transcription_mode_entries"
+            app:entryValues="@array/transcription_mode_values"
+            app:key="transcription_mode"
+            app:title="@string/pref_transcription_mode_title"
+            app:useSimpleSummaryProvider="true" />
+
+        <!-- Status (On / Off) is set in SettingsFragment.onResume(). -->
+        <Preference
+            app:key="perm_a11y"
+            app:title="@string/pref_perm_a11y_title" />
+
         <EditTextPreference
             app:key="trustline_number"
             app:title="@string/pref_trustline_number_title"

@@ -23,13 +23,32 @@ public final class ProtectionSettings {
                 .edit().putBoolean(KEY_ACTIVE, enabled).apply();
     }
 
+    private static final String KEY_CONSENT_AT = "consent_accepted_at";
+
+    /** Remembers when the user last agreed to call monitoring (shown on every activation). */
+    public static void recordConsent(Context context) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .edit().putLong(KEY_CONSENT_AT, System.currentTimeMillis()).apply();
+    }
+
+    /** Time of the last consent in ms, or 0 if never agreed. */
+    public static long consentAcceptedAt(Context context) {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .getLong(KEY_CONSENT_AT, 0L);
+    }
+
     /** Protection only works while Soteria is the default phone app. */
     public static boolean isActive(Context context) {
         return isEnabled(context) && isDefaultDialer(context) && SettingsKeys.monitorCalls(context);
     }
 
-    /** True when the TrustLine number and backend URL are set (Settings or local.properties). */
+    /** Ready to protect calls: offline mode needs nothing else; Twilio mode needs its number + backend. */
     public static boolean isConfigured(Context context) {
+        return SettingsKeys.offlineTranscription(context) || isTwilioConfigured(context);
+    }
+
+    /** True when the TrustLine number and backend URL are set (Settings or local.properties). */
+    public static boolean isTwilioConfigured(Context context) {
         return !listenerNumber(context).isEmpty() && !backendUrl(context).isEmpty();
     }
 

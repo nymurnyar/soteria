@@ -12,6 +12,9 @@ import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -45,6 +48,18 @@ public class InCallActivity extends AppCompatActivity implements CallManager.Lis
     private MaterialButton declineButton;
     private MaterialButton answerButton;
     private View answerSpacer;
+    private MaterialButton offlineButton;
+
+    /** Mic permission for offline transcription; start right away once granted. */
+    private final ActivityResultLauncher<String> micPermission =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
+                if (granted) {
+                    calls.startOfflineTranscription();
+                } else {
+                    android.widget.Toast.makeText(this, R.string.offline_mic_required,
+                            android.widget.Toast.LENGTH_LONG).show();
+                }
+            });
 
     private final Runnable tick = new Runnable() {
         @Override
@@ -87,6 +102,8 @@ public class InCallActivity extends AppCompatActivity implements CallManager.Lis
         declineButton = findViewById(R.id.declineButton);
         answerButton = findViewById(R.id.answerButton);
         answerSpacer = findViewById(R.id.answerSpacer);
+        offlineButton = findViewById(R.id.offlineButton);
+        offlineButton.setOnClickListener(v -> toggleOffline());
 
         answerButton.setOnClickListener(v -> calls.answer());
         declineButton.setOnClickListener(v -> {
@@ -138,6 +155,12 @@ public class InCallActivity extends AppCompatActivity implements CallManager.Lis
         answerSpacer.setVisibility(ringing ? View.VISIBLE : View.GONE);
         declineButton.setContentDescription(getString(ringing ? R.string.call_decline : R.string.call_hang_up));
         controlsRow.setVisibility(ringing ? View.INVISIBLE : View.VISIBLE);
+        boolean offlineOn = calls.isOfflineTranscribing();
+        offlineButton.setVisibility(ringing ? View.GONE : View.VISIBLE);
+        offlineButton.setText(offlineOn ? R.string.call_offline_stop : R.string.call_offline_start);
+        offlineButton.setBackgroundTintList(ColorStateList.valueOf(offlineOn ? 0xFFFFFFFF : 0x33FFFFFF));
+        offlineButton.setTextColor(offlineOn ? 0xFF0B2C5E : 0xFFFFFFFF);
+        offlineButton.setIconTint(ColorStateList.valueOf(offlineOn ? 0xFF0B2C5E : 0xFFFFFFFF));
         styleToggle(muteButton, calls.isMuted());
         styleToggle(speakerButton, calls.isSpeakerOn());
 
@@ -171,7 +194,8 @@ public class InCallActivity extends AppCompatActivity implements CallManager.Lis
         int textColor;
         int background;
         String label;
-        if (!ProtectionSettings.isActive(this) || !ProtectionSettings.isConfigured(this)) {
+        if (protection == CallManager.Protection.OFF
+                && (!ProtectionSettings.isActive(this) || !ProtectionSettings.isConfigured(this))) {
             label = getString(R.string.protection_off_label);
             textColor = 0xFFCBD5E1;
             background = 0x33FFFFFF;
@@ -183,7 +207,8 @@ public class InCallActivity extends AppCompatActivity implements CallManager.Lis
                     background = 0xFFFDE68A;
                     break;
                 case PROTECTED:
-                    label = getString(R.string.protection_active);
+                    label = calls.isOfflineTranscribing()
+                            ? calls.getProtectionDetail() : getString(R.string.protection_active);
                     textColor = 0xFF14532D;
                     background = 0xFFBBF7D0;
                     break;
@@ -232,6 +257,34 @@ public class InCallActivity extends AppCompatActivity implements CallManager.Lis
         riskBanner.setText(text);
         riskBanner.setBackgroundColor(score >= 70 ? 0xFFDC2626 : 0xFFB45309);
         riskBanner.setVisibility(View.VISIBLE);
+    }
+
+    /** Start/stop offline (on-phone) transcription; walks the user through setup if needed. */
+    private void toggleOffline() {
+        if (calls.isOfflineTranscribing()) {
+            calls.stopOfflineTranscription();
+            return;
+        }
+        if (!SoteriaAccessibilityService.isEnabled(this)) {
+            new AlertDialog.Builder(this)
+                    .setTitle(R.string.offline_access_title)
+                    .setMessage(R.string.offline_access_body)
+                    .setPositiveButton(R.string.offline_access_open, (d, w) -> {
+                        try {
+                            startActivity(new android.content.Intent(
+                                    android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS));
+                        } catch (android.content.ActivityNotFoundException ignored) {
+                        }
+                    })
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show();
+            return;
+        }
+        if (!OfflineTranscriber.hasMicPermission(this)) {
+            micPermission.launch(android.Manifest.permission.RECORD_AUDIO);
+            return;
+        }
+        calls.startOfflineTranscription();
     }
 
     private static void styleToggle(MaterialButton button, boolean on) {

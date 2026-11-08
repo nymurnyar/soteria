@@ -81,7 +81,7 @@ public class OverlayManager implements CallSessionTimer.Listener {
     public void hide() {
         hidePanel();
         if (bubble != null) {
-            wm.removeView(bubble);
+            safeRemove(bubble);
             bubble = null;
         }
     }
@@ -123,9 +123,15 @@ public class OverlayManager implements CallSessionTimer.Listener {
 
     private void ensureBubble() {
         if (bubble != null) return;
-        bubble = inflater.inflate(R.layout.overlay_bubble, null);
-        makeDraggable(bubble);
-        wm.addView(bubble, bubbleParams);
+        View view = inflater.inflate(R.layout.overlay_bubble, null);
+        makeDraggable(view);
+        try {
+            wm.addView(view, bubbleParams);
+        } catch (RuntimeException e) {
+            // "Display over other apps" was revoked mid-call: skip the bubble instead of crashing.
+            return;
+        }
+        bubble = view;
         setBubbleColor(Risk.IDLE);
     }
 
@@ -191,12 +197,17 @@ public class OverlayManager implements CallSessionTimer.Listener {
 
     private void showPanel(Mode mode, String title, String message) {
         if (panel == null) {
-            panel = inflater.inflate(R.layout.overlay_panel, null);
-            wireButtons(panel);
+            View view = inflater.inflate(R.layout.overlay_panel, null);
+            wireButtons(view);
             // Open the panel just below the bubble
             panelParams.x = bubbleParams.x;
             panelParams.y = bubbleParams.y + dp(72);
-            wm.addView(panel, panelParams);
+            try {
+                wm.addView(view, panelParams);
+            } catch (RuntimeException e) {
+                return; // overlay permission revoked
+            }
+            panel = view;
         }
         ((TextView) panel.findViewById(R.id.panelTitle)).setText(title);
         ((TextView) panel.findViewById(R.id.panelMessage)).setText(message);
@@ -218,8 +229,16 @@ public class OverlayManager implements CallSessionTimer.Listener {
 
     private void hidePanel() {
         if (panel != null) {
-            wm.removeView(panel);
+            safeRemove(panel);
             panel = null;
+        }
+    }
+
+    private void safeRemove(View view) {
+        try {
+            wm.removeView(view);
+        } catch (RuntimeException ignored) {
+            // Already detached.
         }
     }
 

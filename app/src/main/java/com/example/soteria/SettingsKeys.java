@@ -39,6 +39,8 @@ public final class SettingsKeys {
     // Privacy
     public static final String AUTO_DELETE = "auto_delete";
     public static final String AI_MODE = "ai_mode";
+    /** "twilio" (listening line) or "offline" (on-phone speech recognition on speakerphone). */
+    public static final String TRANSCRIPTION_MODE = "transcription_mode";
 
     private static final int DEFAULT_SESSION_MINUTES = 30;
 
@@ -65,6 +67,12 @@ public final class SettingsKeys {
 
     public static boolean monitorWhatsapp(Context context) {
         return prefs(context).getBoolean(MONITOR_WHATSAPP, false);
+    }
+
+    /** True when calls should be transcribed offline on the phone instead of through Twilio. */
+    public static boolean offlineTranscription(Context context) {
+        // Offline is the default: the Twilio listening line is still being built.
+        return !"twilio".equals(prefs(context).getString(TRANSCRIPTION_MODE, "offline"));
     }
 
     public static boolean autoStartUnknown(Context context) {

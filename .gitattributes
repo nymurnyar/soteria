@@ -1,0 +1,5 @@
+# Shell scripts must use LF or they fail on macOS/Linux ("/bin/sh^M: bad interpreter").
+gradlew text eol=lf
+*.sh text eol=lf
+# Windows batch files keep CRLF.
+*.bat text eol=crlf

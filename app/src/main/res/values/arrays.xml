@@ -40,6 +40,16 @@
         <item>7</item>
     </string-array>
 
+    <!-- How calls are transcribed -->
+    <string-array name="transcription_mode_entries">
+        <item>Offline on this phone (speakerphone)</item>
+        <item>Twilio listening line (coming soon)</item>
+    </string-array>
+    <string-array name="transcription_mode_values" translatable="false">
+        <item>offline</item>
+        <item>twilio</item>
+    </string-array>
+
     <!-- Where the AI runs -->
     <string-array name="ai_mode_entries">
         <item>On-device (private)</item>

@@ -99,6 +99,10 @@ public final class CallManager {
     private String protectedNumber = "";
     private boolean protectedOutgoing = false;
 
+    // Offline (on-phone) transcription instead of the Twilio line.
+    @Nullable private OfflineTranscriber offline;
+    private boolean offlineActive = false;
+
     // Floating overlay (ScreenZen-style session bubble) for the current call.
     @Nullable private OverlayManager overlay;
     @Nullable private CallSessionTimer session;
@@ -144,9 +148,10 @@ public final class CallManager {
         call.unregisterCallback(callback);
         if (call == listenerCall) {
             listenerCall = null;
-            if (protection == Protection.CONNECTING) {
+            // If offline transcription is running we dropped the Twilio line on purpose: nothing to do.
+            if (!offlineActive && protection == Protection.CONNECTING) {
                 fail(app.getString(R.string.protection_failed_listener));
-            } else if (protection == Protection.PROTECTED) {
+            } else if (!offlineActive && protection == Protection.PROTECTED) {
                 stopProtectionCallbacks();
                 protection = Protection.FAILED;
                 protectionDetail = app.getString(R.string.protection_listener_left);
@@ -223,6 +228,35 @@ public final class CallManager {
 
     public Protection getProtection() {
         return protection;
+    }
+
+    /** True while the call is being transcribed on the phone (no Twilio). */
+    public boolean isOfflineTranscribing() {
+        return offlineActive;
+    }
+
+    /**
+     * In-call button: transcribe this call offline on the phone. If the Twilio line is being added
+     * or is already listening, it's dropped and the transcript so far is kept.
+     * Caller must check {@link SoteriaAccessibilityService#isEnabled} and the mic permission first.
+     */
+    public void startOfflineTranscription() {
+        if (offlineActive) return;
+        Call call = protectedCall != null ? protectedCall : realCall();
+        if (call == null || call.getState() == Call.STATE_RINGING || isEmergency(call)) return;
+        userStoppedProtection = false;
+        if (protectedCall == null) beginProtectedCall(call);
+        dropTwilioLeg();
+        startOffline();
+    }
+
+    /** In-call button: stop offline transcription for the rest of this call (saves what we have). */
+    public void stopOfflineTranscription() {
+        if (!offlineActive) return;
+        userStoppedProtection = true; // don't auto-restart Twilio/offline on this call
+        endProtection();
+        updateOngoingNotification();
+        notifyChanged();
     }
 
     public String getProtectionDetail() {
@@ -327,7 +361,12 @@ public final class CallManager {
             if (protectedCall != null && call.getChildren().contains(protectedCall)) {
                 onMerged(); // conference became active
             } else if (protection == Protection.OFF && protectedCall == null && shouldProtect(call)) {
-                startProtection(call);
+                if (SettingsKeys.offlineTranscription(app)) {
+                    beginProtectedCall(call);
+                    startOffline();
+                } else {
+                    startProtection(call);
+                }
             }
         } else if (state == Call.STATE_DISCONNECTED && call == protectedCall) {
             endProtection();
@@ -346,12 +385,20 @@ public final class CallManager {
 
     private boolean shouldProtect(Call call) {
         if (userStoppedProtection) return false;
-        if (!ProtectionSettings.isActive(app) || !ProtectionSettings.isConfigured(app)) return false;
+        if (!ProtectionSettings.isActive(app)) return false;
         if (call.getDetails().hasProperty(Call.Details.PROPERTY_CONFERENCE)) return false;
         if (isEmergency(call)) {
             Log.i(TAG, "Emergency call: never protect");
             return false;
         }
+        if (SettingsKeys.offlineTranscription(app)) {
+            // Offline mode: needs the accessibility switch (mic during calls) + mic permission.
+            boolean ready = SoteriaAccessibilityService.isEnabled(app)
+                    && OfflineTranscriber.hasMicPermission(app);
+            if (!ready) Log.w(TAG, "Offline mode but accessibility/mic not enabled");
+            return ready;
+        }
+        if (!ProtectionSettings.isTwilioConfigured(app)) return false;
         if (ContextCompat.checkSelfPermission(app, Manifest.permission.CALL_PHONE)
                 != PackageManager.PERMISSION_GRANTED) {
             Log.w(TAG, "CALL_PHONE not granted: can't add listener");
@@ -362,9 +409,26 @@ public final class CallManager {
 
     private void startProtection(Call call) {
         Log.i(TAG, "Starting protection");
-        protectedCall = call;
+        beginProtectedCall(call);
         protection = Protection.CONNECTING;
         protectionDetail = app.getString(R.string.protection_connecting);
+        postProtection(() -> fail(app.getString(R.string.protection_failed_timeout)), PROTECTION_TIMEOUT_MS);
+
+        SoteriaApi.createSession((code, error) -> {
+            if (protection != Protection.CONNECTING || protectedCall != call) return;
+            if (error != null || code == null) {
+                Log.w(TAG, "createSession failed", error);
+                fail(app.getString(R.string.protection_failed_backend));
+                return;
+            }
+            sessionCode = code;
+            dialListener(call);
+        });
+    }
+
+    /** Resets the per-call state (transcript, risk, call details) for a newly protected call. */
+    private void beginProtectedCall(Call call) {
+        protectedCall = call;
         sessionCode = null;
         codeSent = false;
         transcript.setLength(0);
@@ -381,18 +445,88 @@ public final class CallManager {
         protectedNumber = num == null ? "" : num;
         protectedOutgoing = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
                 && call.getDetails().getCallDirection() == Call.Details.DIRECTION_OUTGOING;
-        postProtection(() -> fail(app.getString(R.string.protection_failed_timeout)), PROTECTION_TIMEOUT_MS);
+    }
 
-        SoteriaApi.createSession((code, error) -> {
-            if (protection != Protection.CONNECTING || protectedCall != call) return;
-            if (error != null || code == null) {
-                Log.w(TAG, "createSession failed", error);
-                fail(app.getString(R.string.protection_failed_backend));
-                return;
-            }
-            sessionCode = code;
-            dialListener(call);
-        });
+    // ---- Offline (on-phone) transcription ---------------------------------------------------
+
+    private void startOffline() {
+        Log.i(TAG, "Starting offline transcription");
+        offlineActive = true;
+        protection = Protection.PROTECTED;
+        protectionDetail = app.getString(R.string.protection_offline_starting);
+        // Speakerphone so the microphone also hears the caller.
+        setSpeakerOn(true);
+        if (offline == null) offline = new OfflineTranscriber(app, offlineListener);
+        updateOngoingNotification();
+        notifyChanged();
+        offline.start();
+    }
+
+    private void stopOffline() {
+        if (offline != null) offline.stop();
+        offlineActive = false;
+    }
+
+    /** Hangs up the Twilio listening line (if any) and takes the caller off hold. */
+    private void dropTwilioLeg() {
+        stopProtectionCallbacks();
+        sessionCode = null;
+        codeSent = false;
+        if (listenerCall != null && listenerCall.getState() != Call.STATE_DISCONNECTED) {
+            listenerCall.disconnect();
+        }
+        if (protectedCall != null && protectedCall.getState() == Call.STATE_HOLDING) protectedCall.unhold();
+    }
+
+    private final OfflineTranscriber.Listener offlineListener = new OfflineTranscriber.Listener() {
+        @Override
+        public void onPartial(String text) {
+            if (!offlineActive) return;
+            partialTranscript = text;
+            protectionDetail = app.getString(R.string.protection_offline_active);
+            notifyChanged();
+        }
+
+        @Override
+        public void onFinal(String text) {
+            if (!offlineActive) return;
+            if (transcript.length() > 0) transcript.append('\n');
+            transcript.append(text);
+            partialTranscript = "";
+            protectionDetail = app.getString(R.string.protection_offline_active);
+            LocalRiskChecker.Result r = LocalRiskChecker.check(transcript.toString());
+            applyRiskValues(r.score, r.isScam, r.signs, r.summary);
+            notifyChanged();
+        }
+
+        @Override
+        public void onStatus(String status) {
+            if (!offlineActive) return;
+            protectionDetail = status;
+            notifyChanged();
+        }
+
+        @Override
+        public void onFatal(String reason) {
+            if (!offlineActive) return;
+            Log.w(TAG, "Offline transcription failed: " + reason);
+            stopOffline();
+            protection = Protection.FAILED;
+            protectionDetail = app.getString(R.string.protection_offline_failed, reason);
+            updateOngoingNotification();
+            notifyChanged();
+        }
+    };
+
+    /** The real caller to protect: the primary call, or the non-listener child of a conference. */
+    @Nullable
+    private Call realCall() {
+        Call call = getPrimaryCall();
+        if (call == null || call.getChildren().isEmpty()) return call;
+        for (Call c : call.getChildren()) {
+            if (c != listenerCall && !isListenerLeg(c)) return c;
+        }
+        return null;
     }
 
     @SuppressWarnings("MissingPermission") // CALL_PHONE checked in shouldProtect()
@@ -515,10 +649,14 @@ public final class CallManager {
 
     /** Stores the AI's latest answer and buzzes the phone the first time it crosses the threshold. */
     private void applyRisk(SoteriaApi.Session session) {
-        riskScore = session.riskScore;
-        riskIsScam = session.isScam;
-        riskSigns = new ArrayList<>(session.signs);
-        riskSummary = session.summary == null ? "" : session.summary;
+        applyRiskValues(session.riskScore, session.isScam, session.signs, session.summary);
+    }
+
+    private void applyRiskValues(int score, boolean scam, List<String> signs, @Nullable String summary) {
+        riskScore = score;
+        riskIsScam = scam;
+        riskSigns = new ArrayList<>(signs);
+        riskSummary = summary == null ? "" : summary;
         if (!warnedUser && isRisky()) {
             warnedUser = true;
             alertUser();
@@ -540,8 +678,10 @@ public final class CallManager {
                 }
             }
             if (SettingsKeys.soundOnAlert(app)) {
-                new android.media.ToneGenerator(android.media.AudioManager.STREAM_VOICE_CALL, 80)
-                        .startTone(android.media.ToneGenerator.TONE_PROP_BEEP2, 500);
+                android.media.ToneGenerator tone =
+                        new android.media.ToneGenerator(android.media.AudioManager.STREAM_VOICE_CALL, 80);
+                tone.startTone(android.media.ToneGenerator.TONE_PROP_BEEP2, 500);
+                main.postDelayed(tone::release, 700); // free the native audio resource
             }
         } catch (RuntimeException e) {
             Log.w(TAG, "Couldn't alert user", e);
@@ -549,11 +689,12 @@ public final class CallManager {
     }
 
     /** Saves a protected call (transcript + AI risk) so it shows in Logs and, if risky, Alerts. */
-    private void saveCall(String id, long startMs, String name, String number, boolean outgoing,
+    private void saveCall(String id, long startMs, long endMs, String name, String number, boolean outgoing,
                           String transcriptText, int score, boolean scam, List<String> signs, String summary) {
-        long ms = Math.max(0, System.currentTimeMillis() - startMs);
+        long ms = Math.max(0, endMs - startMs);
         String duration = String.format(java.util.Locale.US, "%02d:%02d", ms / 60000, (ms / 1000) % 60);
-        String when = new java.text.SimpleDateFormat("'Today' · h:mm a", java.util.Locale.getDefault())
+        // Real date (not "Today"), so the label stays correct on later days.
+        String when = new java.text.SimpleDateFormat("MMM d · h:mm a", java.util.Locale.getDefault())
                 .format(new java.util.Date(startMs));
         CallLog.Risk risk = score >= 70 || scam ? CallLog.Risk.FLAGGED
                 : score >= 30 ? CallLog.Risk.MONITORING : CallLog.Risk.SAFE;
@@ -565,24 +706,29 @@ public final class CallManager {
     }
 
     private void endProtection() {
+        stopOffline();
         if (protectedCall != null && (protection == Protection.PROTECTED || transcript.length() > 0)) {
             final String id = "call-" + protectedStartMs;
             final long startMs = protectedStartMs;
             final String name = protectedName;
             final String number = protectedNumber;
             final boolean outgoing = protectedOutgoing;
-            saveCall(id, startMs, name, number, outgoing, getTranscriptText(),
+            final long endMs = System.currentTimeMillis();
+            saveCall(id, startMs, endMs, name, number, outgoing, getTranscriptText(),
                     riskScore, riskIsScam, riskSigns, riskSummary);
             // The backend does one last AI check when the call ends: fetch it and update the saved call.
             final String code = sessionCode;
             if (code != null) {
-                main.postDelayed(() -> SoteriaApi.getSession(code, 0, (session, error) -> {
-                    if (session == null) return;
-                    StringBuilder all = new StringBuilder();
-                    for (String line : session.lines) all.append(all.length() > 0 ? "\n" : "").append(line);
-                    saveCall(id, startMs, name, number, outgoing, all.toString(),
-                            session.riskScore, session.isScam, session.signs, session.summary);
-                }), 4000);
+                // The AI can take a while (LLM timeout is 45 s), so check a few times and keep the latest.
+                for (long delay : new long[]{4_000, 20_000, 50_000}) {
+                    main.postDelayed(() -> SoteriaApi.getSession(code, 0, (session, error) -> {
+                        if (session == null || session.lines.isEmpty()) return;
+                        StringBuilder all = new StringBuilder();
+                        for (String line : session.lines) all.append(all.length() > 0 ? "\n" : "").append(line);
+                        saveCall(id, startMs, endMs, name, number, outgoing, all.toString(),
+                                session.riskScore, session.isScam, session.signs, session.summary);
+                    }), delay);
+                }
             }
         }
         stopProtectionCallbacks();
@@ -667,8 +813,16 @@ public final class CallManager {
         if (protectedCall != null) return;
         Call call = getPrimaryCall();
         if (call == null) return;
-        if (!call.getChildren().isEmpty()) call = call.getChildren().get(0);
-        if (call.getState() == Call.STATE_ACTIVE && shouldProtect(call)) startProtection(call);
+        call = realCall(); // never the listener leg
+        if (call == null) return;
+        if (call.getState() == Call.STATE_ACTIVE && shouldProtect(call)) {
+            if (SettingsKeys.offlineTranscription(app)) {
+                beginProtectedCall(call);
+                startOffline();
+            } else {
+                startProtection(call);
+            }
+        }
         notifyChanged();
     }
 
