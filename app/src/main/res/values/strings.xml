@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">soteria</string>
+    <string name="app_name">Soteria</string>
 
     <!-- Login -->
     <string name="app_title">Soteria</string>
@@ -24,9 +24,6 @@
     <string name="title_logs">Logs</string>
     <string name="title_alerts">Alerts</string>
     <string name="title_settings">Settings</string>
-    <string name="greeting_morning">Good morning</string>
-    <string name="greeting_afternoon">Good afternoon</string>
-    <string name="greeting_evening">Good evening</string>
     <string name="home_overview_title">Overview</string>
     <string name="home_stat_checked">Calls checked</string>
     <string name="home_latest_alert">LATEST ALERT</string>
@@ -55,6 +52,102 @@
     <string name="filter_flagged">Flagged</string>
     <string name="recent_calls_title">Recent calls</string>
     <string name="call_empty_results">No calls match your search or filter.</string>
+
+    <!-- Alerts -->
+    <string name="alerts_subtitle">Suspicious calls Soteria detected.</string>
+    <string name="alerts_stat_high">High risk</string>
+    <string name="alerts_stat_review">Needs review</string>
+    <string name="alerts_stat_resolved">Resolved</string>
+    <string name="alerts_tab_open">Open · %1$d</string>
+    <string name="alerts_tab_resolved">Resolved · %1$d</string>
+    <string name="alerts_severity_high">HIGH RISK</string>
+    <string name="alerts_severity_review">NEEDS REVIEW</string>
+    <string name="alerts_status_reviewed">REVIEWED</string>
+    <string name="alerts_status_false_alarm">FALSE ALARM</string>
+    <string name="alerts_risk_score">Risk score</string>
+    <string name="alerts_action_details">Details</string>
+    <string name="alerts_action_review">Mark reviewed</string>
+    <string name="alerts_action_false_alarm">False alarm</string>
+    <string name="alerts_action_reopen">Reopen</string>
+    <string name="alerts_action_close">Close</string>
+    <string name="alerts_action_undo">Undo</string>
+    <string name="alerts_snack_reviewed">Alert marked as reviewed</string>
+    <string name="alerts_snack_false_alarm">Alert marked as a false alarm</string>
+    <string name="alerts_snack_reopened">Alert reopened</string>
+    <string name="alerts_empty_open_title">All clear</string>
+    <string name="alerts_empty_open_body">No open alerts. Soteria will let you know when a call looks suspicious.</string>
+    <string name="alerts_empty_resolved_title">No resolved alerts yet</string>
+    <string name="alerts_empty_resolved_body">Alerts you review or mark as a false alarm will appear here.</string>
+    <string name="alerts_why_title">Why Soteria flagged this</string>
+    <string name="alerts_todo_title">What to do</string>
+    <string name="alerts_excerpt_title">Conversation excerpt</string>
+    <string name="alerts_why_unverified">The caller\'s identity could not be verified.</string>
+    <string name="alerts_todo_high">1. Don\'t share passwords, admin credentials or one-time codes.\n2. Hang up and call back using a number from your company directory.\n3. Report this call to your IT or security team.</string>
+    <string name="alerts_todo_review">1. Verify who the caller is through a trusted channel.\n2. Be cautious of urgent requests or pressure to act quickly.\n3. Don\'t share sensitive information until the caller is confirmed.</string>
+    <string name="alerts_fact_direction">Direction</string>
+    <string name="alerts_fact_duration">Duration</string>
+    <string name="alerts_fact_identity">Caller identity</string>
+    <string name="alerts_fact_risk">Risk score</string>
+    <string name="alerts_fact_status">Status</string>
+    <string name="alerts_incoming">Incoming</string>
+    <string name="alerts_outgoing">Outgoing</string>
+    <string name="alerts_internal">Internal</string>
+    <string name="alerts_external">External</string>
+    <string name="alerts_status_open">Open</string>
+    <string name="alerts_status_reviewed_label">Reviewed</string>
+    <string name="alerts_status_false_alarm_label">False alarm</string>
+
+    <!-- Calls -->
+    <string name="call_unknown_caller">Unknown caller</string>
+    <string name="call_state_incoming">Incoming call</string>
+    <string name="call_state_dialing">Calling…</string>
+    <string name="call_state_holding">On hold</string>
+    <string name="call_state_active">Connected</string>
+    <string name="call_state_ended">Call ended</string>
+    <string name="call_live_transcript">LIVE TRANSCRIPT</string>
+    <string name="call_transcript_waiting">Listening… the transcript will appear here.</string>
+    <string name="call_mute">Mute</string>
+    <string name="call_speaker">Speaker</string>
+    <string name="call_answer">Answer</string>
+    <string name="call_decline">Decline</string>
+    <string name="call_hang_up">Hang up</string>
+    <string name="channel_incoming">Incoming calls</string>
+    <string name="channel_ongoing">Ongoing calls</string>
+    <string name="notification_ongoing">Ongoing call</string>
+
+    <!-- Protection (listener merge) -->
+    <string name="protection_off_label">Soteria protection off</string>
+    <string name="protection_ready">Soteria will protect this call</string>
+    <string name="protection_standby">Soteria standing by</string>
+    <string name="protection_connecting">Connecting Soteria…</string>
+    <string name="protection_adding">Adding Soteria to the call…</string>
+    <string name="protection_verifying">Verifying Soteria session…</string>
+    <string name="protection_merging">Merging calls…</string>
+    <string name="protection_active">Protected · Transcribing</string>
+    <string name="protection_listener_left">Soteria left the call</string>
+    <string name="protection_failed_backend">Protection unavailable: server unreachable</string>
+    <string name="protection_failed_dial">Protection unavailable: couldn\'t add Soteria</string>
+    <string name="protection_failed_listener">Protection unavailable: Soteria didn\'t answer</string>
+    <string name="protection_failed_merge">Protection unavailable: carrier can\'t merge calls</string>
+    <string name="protection_failed_timeout">Protection unavailable: timed out</string>
+
+    <!-- Dialer -->
+    <string name="dialer_title">Keypad</string>
+    <string name="dialer_hint">Enter a number</string>
+    <string name="dialer_call">Call</string>
+    <string name="dialer_delete">Delete</string>
+    <string name="dialer_protected">PROTECTED</string>
+    <string name="dialer_unprotected">NOT PROTECTED</string>
+    <string name="dialer_permission_needed">Soteria needs phone permission to place calls.</string>
+
+    <!-- Activation -->
+    <string name="home_keypad_title">Keypad</string>
+    <string name="home_keypad_subtitle">Make a protected call</string>
+    <string name="activation_not_configured_title">Soteria isn\'t configured</string>
+    <string name="activation_not_configured_body">Add soteria.listenerNumber, soteria.backendUrl and soteria.apiKey to local.properties, then rebuild the app. See backend/README.md.</string>
+    <string name="activation_dialer_required">Soteria must be your default phone app to protect calls.</string>
+    <string name="activation_permissions_required">Phone permission is required to protect calls.</string>
+    <string name="activation_off_hint">Protection off. Soteria is still your phone app; you can change it in Settings › Apps › Default apps.</string>
 
     <!-- Placeholder screens -->
     <string name="action_back">Back</string>

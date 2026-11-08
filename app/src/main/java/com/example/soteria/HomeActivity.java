@@ -3,10 +3,14 @@ package com.example.soteria;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
+import android.Manifest;
+import android.app.role.RoleManager;
 import android.content.Intent;
-import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
+import android.os.Build;
 import android.os.Bundle;
+import android.telecom.TelecomManager;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,10 +18,14 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.ColorInt;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.StringRes;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
@@ -26,14 +34,11 @@ import androidx.transition.TransitionManager;
 
 import com.google.android.material.button.MaterialButton;
 
-import java.util.Calendar;
+import java.util.ArrayList;
 import java.util.List;
 
 /** Front page: protection toggle, overview stats, latest alert and quick access to Logs/Alerts/Settings. */
 public class HomeActivity extends AppCompatActivity {
-
-    private static final String PREFS_NAME = "soteria_prefs";
-    private static final String KEY_ACTIVE = "protection_active";
 
     // Palette (matches the Call Logs screen).
     private static final int NAVY = 0xFF102A4C;
@@ -43,7 +48,25 @@ public class HomeActivity extends AppCompatActivity {
     private static final int RED = 0xFFDC2626;
     private static final int AMBER = 0xFFB45309;
 
-    private SharedPreferences prefs;
+    /** Step 1 of activation: become the default phone app. */
+    private final ActivityResultLauncher<Intent> dialerRoleLauncher =
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+                if (ProtectionSettings.isDefaultDialer(this)) {
+                    requestPermissionsThenEnable();
+                } else {
+                    Toast.makeText(this, R.string.activation_dialer_required, Toast.LENGTH_LONG).show();
+                }
+            });
+
+    /** Step 2 of activation: phone (required) + notifications (for incoming-call screen). */
+    private final ActivityResultLauncher<String[]> permissionsLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), granted -> {
+                if (hasPermission(Manifest.permission.CALL_PHONE)) {
+                    setProtection(true);
+                } else {
+                    Toast.makeText(this, R.string.activation_permissions_required, Toast.LENGTH_LONG).show();
+                }
+            });
 
     private ViewGroup heroCard;
     private View heroIconBg;
@@ -71,8 +94,6 @@ public class HomeActivity extends AppCompatActivity {
             return insets;
         });
 
-        prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-
         heroCard = findViewById(R.id.heroCard);
         heroIconBg = findViewById(R.id.heroIconBg);
         heroIcon = findViewById(R.id.heroIcon);
@@ -82,23 +103,79 @@ public class HomeActivity extends AppCompatActivity {
         pulseRingOuter = findViewById(R.id.pulseRingOuter);
         pulseRingInner = findViewById(R.id.pulseRingInner);
 
-        ((TextView) findViewById(R.id.greetingText)).setText(greetingRes());
         findViewById(R.id.settingsButton).setOnClickListener(v -> open(SettingsActivity.class));
 
-        // TODO: hook up real protection (default dialer + call listener) once features are defined.
         activateButton.setOnClickListener(v -> {
-            boolean active = !prefs.getBoolean(KEY_ACTIVE, false);
-            prefs.edit().putBoolean(KEY_ACTIVE, active).apply();
-            v.performHapticFeedback(android.os.Build.VERSION.SDK_INT >= 30
-                    ? HapticFeedbackConstants.CONFIRM : HapticFeedbackConstants.VIRTUAL_KEY);
-            TransitionManager.beginDelayedTransition(heroCard);
-            renderProtection(active);
-            Toast.makeText(this, active ? R.string.home_protection_on_toast
-                    : R.string.home_protection_off_toast, Toast.LENGTH_SHORT).show();
+            if (ProtectionSettings.isActive(this)) {
+                setProtection(false);
+            } else {
+                startActivation();
+            }
         });
 
+        renderProtection(ProtectionSettings.isActive(this));
+    }
+
+    // ---- Activation ------------------------------------------------------------------------
+
+    private void startActivation() {
+        if (!ProtectionSettings.isConfigured()) {
+            new AlertDialog.Builder(this)
+                    .setTitle(R.string.activation_not_configured_title)
+                    .setMessage(R.string.activation_not_configured_body)
+                    .setPositiveButton(android.R.string.ok, null)
+                    .show();
+            return;
+        }
+        if (ProtectionSettings.isDefaultDialer(this)) {
+            requestPermissionsThenEnable();
+            return;
+        }
+        Intent request;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            RoleManager roles = getSystemService(RoleManager.class);
+            request = roles.createRequestRoleIntent(RoleManager.ROLE_DIALER);
+        } else {
+            request = new Intent(TelecomManager.ACTION_CHANGE_DEFAULT_DIALER)
+                    .putExtra(TelecomManager.EXTRA_CHANGE_DEFAULT_DIALER_PACKAGE_NAME, getPackageName());
+        }
+        dialerRoleLauncher.launch(request);
+    }
+
+    private void requestPermissionsThenEnable() {
+        List<String> needed = new ArrayList<>();
+        if (!hasPermission(Manifest.permission.CALL_PHONE)) needed.add(Manifest.permission.CALL_PHONE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                && !hasPermission(Manifest.permission.POST_NOTIFICATIONS)) {
+            needed.add(Manifest.permission.POST_NOTIFICATIONS);
+        }
+        if (needed.isEmpty()) {
+            setProtection(true);
+        } else {
+            permissionsLauncher.launch(needed.toArray(new String[0]));
+        }
+    }
+
+    private boolean hasPermission(String permission) {
+        return ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private void setProtection(boolean active) {
+        ProtectionSettings.setEnabled(this, active);
+        activateButton.performHapticFeedback(Build.VERSION.SDK_INT >= 30
+                ? HapticFeedbackConstants.CONFIRM : HapticFeedbackConstants.VIRTUAL_KEY);
+        TransitionManager.beginDelayedTransition(heroCard);
+        renderProtection(active);
+        Toast.makeText(this, active ? R.string.home_protection_on_toast
+                : R.string.activation_off_hint, active ? Toast.LENGTH_SHORT : Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Refresh every time we come back, e.g. after reviewing alerts or changing the default phone app.
         bindOverview(CallLogRepository.getDemoCalls());
-        renderProtection(prefs.getBoolean(KEY_ACTIVE, false));
+        renderProtection(ProtectionSettings.isActive(this));
     }
 
     // ---- Protection hero -------------------------------------------------------------------
@@ -162,28 +239,32 @@ public class HomeActivity extends AppCompatActivity {
     private void bindOverview(List<CallLog> calls) {
         int safe = 0;
         int flagged = 0;
-        CallLog latestFlagged = null;
         for (CallLog call : calls) {
             if (call.getRisk() == CallLog.Risk.SAFE) safe++;
-            if (call.getRisk() == CallLog.Risk.FLAGGED) {
-                flagged++;
-                if (latestFlagged == null) latestFlagged = call; // list is newest-first
-            }
+            if (call.getRisk() == CallLog.Risk.FLAGGED) flagged++;
         }
+        // Alerts the user hasn't reviewed yet (newest first); prefer the latest high-risk one.
+        List<CallLog> openAlerts = new AlertStore(this).alerts(calls, true);
+        CallLog latestAlert = null;
+        for (CallLog call : openAlerts) {
+            if (call.getRisk() == CallLog.Risk.FLAGGED) { latestAlert = call; break; }
+        }
+        if (latestAlert == null && !openAlerts.isEmpty()) latestAlert = openAlerts.get(0);
 
         bindStat(R.id.statTotal, calls.size(), R.string.home_stat_checked, BLUE);
         bindStat(R.id.statSafe, safe, R.string.stat_safe, GREEN);
         bindStat(R.id.statFlagged, flagged, R.string.stat_flagged, RED);
 
         View alertCard = findViewById(R.id.latestAlertCard);
-        if (latestFlagged == null) {
+        if (latestAlert == null) {
             alertCard.setVisibility(View.GONE);
         } else {
-            String reason = latestFlagged.getThreatCategories().isEmpty()
-                    ? "" : " · " + latestFlagged.getThreatCategories().get(0);
+            alertCard.setVisibility(View.VISIBLE);
+            String reason = latestAlert.getThreatCategories().isEmpty()
+                    ? "" : " · " + latestAlert.getThreatCategories().get(0);
             ((TextView) findViewById(R.id.latestAlertTitle))
-                    .setText(latestFlagged.getDisplayName() + reason);
-            ((TextView) findViewById(R.id.latestAlertTime)).setText(latestFlagged.getTimestamp());
+                    .setText(latestAlert.getDisplayName() + reason);
+            ((TextView) findViewById(R.id.latestAlertTime)).setText(latestAlert.getTimestamp());
             alertCard.setOnClickListener(v -> open(AlertsActivity.class));
         }
 
@@ -192,9 +273,13 @@ public class HomeActivity extends AppCompatActivity {
                 getString(R.string.home_logs_subtitle, calls.size()), 0, CallLogsActivity.class);
         bindAction(R.id.actionAlerts, R.drawable.ic_bell, RED, 0xFFFEE2E2,
                 getString(R.string.title_alerts),
-                flagged > 0 ? getString(R.string.home_alerts_subtitle_some, flagged)
+                !openAlerts.isEmpty()
+                        ? getString(R.string.home_alerts_subtitle_some, openAlerts.size())
                         : getString(R.string.home_alerts_subtitle_none),
-                flagged, AlertsActivity.class);
+                openAlerts.size(), AlertsActivity.class);
+        bindAction(R.id.actionKeypad, R.drawable.ic_dialpad, GREEN, 0xFFDCFCE7,
+                getString(R.string.home_keypad_title),
+                getString(R.string.home_keypad_subtitle), 0, DialerActivity.class);
         bindAction(R.id.actionSettings, R.drawable.ic_settings, SLATE, 0xFFF1F5F9,
                 getString(R.string.title_settings),
                 getString(R.string.home_settings_subtitle), 0, SettingsActivity.class);
@@ -220,24 +305,14 @@ public class HomeActivity extends AppCompatActivity {
         ((TextView) card.findViewById(R.id.actionTitle)).setText(title);
         ((TextView) card.findViewById(R.id.actionSubtitle)).setText(subtitle);
         TextView badgeView = card.findViewById(R.id.actionBadge);
-        if (badge > 0) {
-            badgeView.setText(String.valueOf(badge));
-            badgeView.setVisibility(View.VISIBLE);
-        }
+        badgeView.setText(String.valueOf(badge));
+        badgeView.setVisibility(badge > 0 ? View.VISIBLE : View.GONE);
         card.setContentDescription(title + ". " + subtitle);
         card.setOnClickListener(v -> open(target));
     }
 
     private void open(Class<?> target) {
         startActivity(new Intent(this, target));
-    }
-
-    @StringRes
-    private static int greetingRes() {
-        int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
-        if (hour < 12) return R.string.greeting_morning;
-        if (hour < 18) return R.string.greeting_afternoon;
-        return R.string.greeting_evening;
     }
 
     @Override
