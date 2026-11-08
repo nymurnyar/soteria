@@ -125,13 +125,4 @@ Simulates a call session with a scam transcript and checks the risk result.
 - Carrier must support 3-way calling for the merge.
 - Recording/transcribing calls needs consent in many places. A production version should announce the listener and follow local law.
 
-## Team
 
-| Name | Role |
-|---|---|
-| Nymur | Team lead |
-| Pearl | Frontend, backend, LLMs, hardware |
-| Avni | Frontend |
-| Ercel | Backend |
-| Andrew | LLMs |
-| Sourani | |
