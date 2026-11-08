@@ -35,7 +35,6 @@ import androidx.transition.TransitionManager;
 import com.google.android.material.button.MaterialButton;
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
 
 /** Front page: protection toggle, overview stats, latest alert and quick access to Logs/Alerts/Settings. */
@@ -103,8 +102,6 @@ public class HomeActivity extends AppCompatActivity {
         activateButton = findViewById(R.id.activateButton);
         pulseRingOuter = findViewById(R.id.pulseRingOuter);
         pulseRingInner = findViewById(R.id.pulseRingInner);
-
-        ((TextView) findViewById(R.id.greetingText)).setText(greetingRes());
 
         activateButton.setOnClickListener(v -> {
             if (ProtectionSettings.isActive(this)) {
@@ -314,14 +311,6 @@ public class HomeActivity extends AppCompatActivity {
 
     private void open(Class<?> target) {
         startActivity(new Intent(this, target));
-    }
-
-    @StringRes
-    private static int greetingRes() {
-        int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
-        if (hour < 12) return R.string.greeting_morning;
-        if (hour < 18) return R.string.greeting_afternoon;
-        return R.string.greeting_evening;
     }
 
     @Override

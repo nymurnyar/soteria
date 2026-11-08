@@ -6,4 +6,10 @@
     </style>
 
     <style name="Theme.Soteria" parent="Base.Theme.Soteria" />
+
+    <!-- Rounded-square clip for the Soteria logo. -->
+    <style name="ShapeAppearance.Soteria.Logo" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">14dp</item>
+    </style>
 </resources>
