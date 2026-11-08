@@ -73,6 +73,15 @@ public class HomeActivity extends AppCompatActivity {
 
         prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
 
+        // First launch: ask to become the default phone app so TrustLine can be auto-added to calls.
+        if (!DefaultDialer.isDefault(this) && !prefs.getBoolean("asked_default_dialer", false)) {
+            prefs.edit().putBoolean("asked_default_dialer", true).apply();
+            try {
+                startActivityForResult(DefaultDialer.requestIntent(this), 7);
+            } catch (Exception ignored) {
+            }
+        }
+
         heroCard = findViewById(R.id.heroCard);
         heroIconBg = findViewById(R.id.heroIconBg);
         heroIcon = findViewById(R.id.heroIcon);

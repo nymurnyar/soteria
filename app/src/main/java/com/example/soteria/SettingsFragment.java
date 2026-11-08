@@ -37,6 +37,11 @@ public class SettingsFragment extends PreferenceFragmentCompat {
                 }
             });
 
+    /** Android's "make Soteria your default phone app" dialog. */
+    private final ActivityResultLauncher<Intent> dialerRoleRequest =
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
+                    result -> updatePermissionStatus());
+
     @Override
     public void onCreatePreferences(@Nullable Bundle savedInstanceState, @Nullable String rootKey) {
         setPreferencesFromResource(R.xml.root_preferences, rootKey);
@@ -48,6 +53,14 @@ public class SettingsFragment extends PreferenceFragmentCompat {
             addContact.setOnPreferenceClickListener(p -> {
                 contactPicker.launch(new Intent(Intent.ACTION_PICK,
                         ContactsContract.CommonDataKinds.Phone.CONTENT_URI));
+                return true;
+            });
+        }
+
+        Preference dialer = findPreference("perm_default_dialer");
+        if (dialer != null) {
+            dialer.setOnPreferenceClickListener(p -> {
+                dialerRoleRequest.launch(DefaultDialer.requestIntent(requireContext()));
                 return true;
             });
         }
@@ -147,6 +160,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         boolean notifications = NotificationManagerCompat.getEnabledListenerPackages(context)
                 .contains(context.getPackageName());
 
+        setStatus("perm_default_dialer", DefaultDialer.isDefault(context));
         setStatus("perm_overlay", overlay);
         setStatus("perm_mic", mic);
         setStatus("perm_notifications", notifications);

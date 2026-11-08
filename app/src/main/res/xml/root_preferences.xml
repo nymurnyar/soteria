@@ -30,6 +30,19 @@
             app:summary="@string/pref_auto_start_unknown_summary"
             app:title="@string/pref_auto_start_unknown_title" />
 
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:key="auto_trustline"
+            app:summary="@string/pref_auto_trustline_summary"
+            app:title="@string/pref_auto_trustline_title" />
+
+        <EditTextPreference
+            app:defaultValue="+16043736537"
+            app:dependency="auto_trustline"
+            app:key="trustline_number"
+            app:title="@string/pref_trustline_number_title"
+            app:useSimpleSummaryProvider="true" />
+
     </PreferenceCategory>
 
     <PreferenceCategory app:title="@string/pref_category_session">
@@ -107,6 +120,10 @@
             app:useSimpleSummaryProvider="true" />
 
         <!-- Summaries (Granted / Not granted) are set in SettingsFragment.onResume(). -->
+        <Preference
+            app:key="perm_default_dialer"
+            app:title="@string/pref_perm_default_dialer_title" />
+
         <Preference
             app:key="perm_overlay"
             app:title="@string/pref_perm_overlay_title" />

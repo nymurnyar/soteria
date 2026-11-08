@@ -20,6 +20,9 @@ public final class SettingsKeys {
     public static final String MONITOR_EMAIL = "monitor_email";
     public static final String MONITOR_WHATSAPP = "monitor_whatsapp";
     public static final String AUTO_START_UNKNOWN = "auto_start_unknown";
+    public static final String AUTO_TRUSTLINE = "auto_trustline";
+    public static final String TRUSTLINE_NUMBER = "trustline_number";
+    public static final String DEFAULT_TRUSTLINE_NUMBER = "+16043736537";
 
     // Session
     public static final String DEFAULT_SESSION_LENGTH = "default_session_length";
@@ -67,6 +70,16 @@ public final class SettingsKeys {
 
     public static boolean autoStartUnknown(Context context) {
         return prefs(context).getBoolean(AUTO_START_UNKNOWN, true);
+    }
+
+    /** Auto-dial TrustLine and merge it into every call (needs Soteria as default phone app). */
+    public static boolean autoTrustLine(Context context) {
+        return prefs(context).getBoolean(AUTO_TRUSTLINE, true);
+    }
+
+    public static String trustLineNumber(Context context) {
+        String n = prefs(context).getString(TRUSTLINE_NUMBER, DEFAULT_TRUSTLINE_NUMBER);
+        return n == null || n.trim().isEmpty() ? DEFAULT_TRUSTLINE_NUMBER : n.trim();
     }
 
     // ---------- Session ----------

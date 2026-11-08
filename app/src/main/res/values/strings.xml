@@ -137,4 +137,8 @@
     <string name="pref_perm_notifications_title">Notification access</string>
     <string name="pref_perm_granted">Granted</string>
     <string name="pref_perm_missing">Not granted. Tap to fix</string>
+    <string name="pref_auto_trustline_title">Auto-add TrustLine to calls</string>
+    <string name="pref_auto_trustline_summary">Soteria dials TrustLine and merges it into your call so it can flag scams</string>
+    <string name="pref_trustline_number_title">TrustLine number</string>
+    <string name="pref_perm_default_dialer_title">Default phone app (needed for auto-add)</string>
 </resources>
