@@ -4,4 +4,17 @@
     <color name="white">#FFFFFFFF</color>
     <!-- Soteria brand navy (sampled from branding/logo.png) -->
     <color name="ic_launcher_background">#012659</color>
-</resources>
+
+    <!-- Soteria palette (from the logo: navy tile, leaf-green S, white shield), lightened. -->
+    <color name="soteria_navy">#0B2C5E</color>
+    <color name="soteria_navy_logo">#022759</color>
+    <color name="soteria_green">#3F8F50</color>
+    <color name="soteria_green_dark">#2E7040</color>
+    <color name="soteria_green_soft">#DDF0D8</color>
+    <color name="soteria_sage">#C4D7A6</color>
+    <color name="soteria_mint_bg">#F3F8F2</color>
+    <color name="soteria_tile">#E3F1E1</color>
+    <color name="soteria_stroke">#DDEBDA</color>
+    <color name="soteria_slate">#5E6E84</color>
+    <color name="soteria_muted">#94A3B8</color>
+</resources>

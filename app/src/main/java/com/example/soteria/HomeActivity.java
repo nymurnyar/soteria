@@ -41,9 +41,9 @@ import java.util.List;
 public class HomeActivity extends AppCompatActivity {
 
     // Palette (matches the Call Logs screen).
-    private static final int NAVY = 0xFF102A4C;
-    private static final int SLATE = 0xFF64748B;
-    private static final int BLUE = 0xFF4285E8;
+    private static final int NAVY = 0xFF0B2C5E;
+    private static final int SLATE = 0xFF5E6E84;
+    private static final int BLUE = 0xFF3F8F50;
     private static final int GREEN = 0xFF15803D;
     private static final int RED = 0xFFDC2626;
     private static final int AMBER = 0xFFB45309;
@@ -186,7 +186,7 @@ public class HomeActivity extends AppCompatActivity {
         heroTitle.setText(active ? R.string.status_active : R.string.status_inactive);
         heroTitle.setTextColor(active ? 0xFFFFFFFF : NAVY);
         heroSubtitle.setText(active ? R.string.status_active_detail : R.string.status_inactive_detail);
-        heroSubtitle.setTextColor(active ? 0xFFDBEAFE : SLATE);
+        heroSubtitle.setTextColor(active ? 0xFFDDF0D8 : SLATE);
 
         heroIcon.setImageResource(active ? R.drawable.ic_shield_check : R.drawable.ic_shield);
         heroIcon.setImageTintList(ColorStateList.valueOf(active ? 0xFFFFFFFF : AMBER));
@@ -268,7 +268,7 @@ public class HomeActivity extends AppCompatActivity {
             alertCard.setOnClickListener(v -> open(AlertsActivity.class));
         }
 
-        bindAction(R.id.actionLogs, R.drawable.ic_history, BLUE, 0xFFEAF2FF,
+        bindAction(R.id.actionLogs, R.drawable.ic_history, BLUE, 0xFFE3F1E1,
                 getString(R.string.home_logs_title),
                 getString(R.string.home_logs_subtitle, calls.size()), 0, CallLogsActivity.class);
         bindAction(R.id.actionAlerts, R.drawable.ic_bell, RED, 0xFFFEE2E2,
@@ -280,7 +280,7 @@ public class HomeActivity extends AppCompatActivity {
         bindAction(R.id.actionKeypad, R.drawable.ic_dialpad, GREEN, 0xFFDCFCE7,
                 getString(R.string.home_keypad_title),
                 getString(R.string.home_keypad_subtitle), 0, DialerActivity.class);
-        bindAction(R.id.actionSettings, R.drawable.ic_settings, SLATE, 0xFFF1F5F9,
+        bindAction(R.id.actionSettings, R.drawable.ic_settings, SLATE, 0xFFEEF4ED,
                 getString(R.string.title_settings),
                 getString(R.string.home_settings_subtitle), 0, SettingsActivity.class);
     }

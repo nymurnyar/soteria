@@ -11,7 +11,7 @@
     app:cardBackgroundColor="#FFFFFF"
     app:cardCornerRadius="14dp"
     app:cardElevation="0dp"
-    app:strokeColor="#E5EDF7"
+    app:strokeColor="#DDEBDA"
     app:strokeWidth="1dp">
 
     <LinearLayout
@@ -46,7 +46,7 @@
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:textColor="#102A4C"
+                android:textColor="#0B2C5E"
                 android:textSize="15sp"
                 android:textStyle="bold"
                 tools:text="Alex Morgan" />
@@ -58,7 +58,7 @@
                 android:layout_marginTop="4dp"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:textColor="#64748B"
+                android:textColor="#5E6E84"
                 android:textSize="11sp"
                 tools:text="Today · 10:42 AM · 04:32 · Incoming" />
 
@@ -67,7 +67,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="5dp"
-                android:textColor="#64748B"
+                android:textColor="#5E6E84"
                 android:textSize="10sp"
                 android:textStyle="bold"
                 tools:text="INTERNAL" />
