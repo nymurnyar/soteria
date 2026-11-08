@@ -119,7 +119,7 @@ public class HomeActivity extends AppCompatActivity {
     // ---- Activation ------------------------------------------------------------------------
 
     private void startActivation() {
-        if (!ProtectionSettings.isConfigured()) {
+        if (!ProtectionSettings.isConfigured(this)) {
             new AlertDialog.Builder(this)
                     .setTitle(R.string.activation_not_configured_title)
                     .setMessage(R.string.activation_not_configured_body)
@@ -174,7 +174,7 @@ public class HomeActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         // Refresh every time we come back, e.g. after reviewing alerts or changing the default phone app.
-        bindOverview(CallLogRepository.getDemoCalls());
+        bindOverview(CallLogRepository.getCalls(this));
         renderProtection(ProtectionSettings.isActive(this));
     }
 

@@ -186,4 +186,7 @@
     <string name="pref_perm_notifications_title">Notification access</string>
     <string name="pref_perm_granted">Granted</string>
     <string name="pref_perm_missing">Not granted. Tap to fix</string>
+    <string name="pref_trustline_number_title">TrustLine number</string>
+    <string name="pref_backend_url_title">Backend URL (ngrok)</string>
+    <string name="risk_warning_title">⚠ Possible scam · %1$d%% risk</string>
 </resources>

@@ -44,7 +44,7 @@ public class CallLogsActivity extends AppCompatActivity implements CallLogAdapte
         list.setLayoutManager(new LinearLayoutManager(this));
         adapter = new CallLogAdapter(this);
         list.setAdapter(adapter);
-        allCalls.addAll(CallLogRepository.getDemoCalls());
+        allCalls.addAll(CallLogRepository.getCalls(this));
 
         setupFilters();
         EditText search = findViewById(R.id.searchInput);

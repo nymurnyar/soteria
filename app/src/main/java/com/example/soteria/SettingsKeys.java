@@ -20,6 +20,8 @@ public final class SettingsKeys {
     public static final String MONITOR_EMAIL = "monitor_email";
     public static final String MONITOR_WHATSAPP = "monitor_whatsapp";
     public static final String AUTO_START_UNKNOWN = "auto_start_unknown";
+    public static final String TRUSTLINE_NUMBER = "trustline_number";
+    public static final String BACKEND_URL = "backend_url";
 
     // Session
     public static final String DEFAULT_SESSION_LENGTH = "default_session_length";
@@ -89,6 +91,15 @@ public final class SettingsKeys {
     }
 
     // ---------- Alerts ----------
+
+    /** Risk % (0-100) at which the call screen shows a scam warning. */
+    public static int warningThreshold(Context context) {
+        switch (sensitivity(context)) {
+            case "high": return 30;
+            case "low": return 70;
+            default: return 50;
+        }
+    }
 
     /** "low", "medium" or "high". */
     public static String sensitivity(Context context) {

@@ -25,12 +25,26 @@ public final class ProtectionSettings {
 
     /** Protection only works while Soteria is the default phone app. */
     public static boolean isActive(Context context) {
-        return isEnabled(context) && isDefaultDialer(context);
+        return isEnabled(context) && isDefaultDialer(context) && SettingsKeys.monitorCalls(context);
     }
 
-    /** True when the listener number and backend URL are set in local.properties. */
-    public static boolean isConfigured() {
-        return !BuildConfig.LISTENER_NUMBER.isEmpty() && !BuildConfig.BACKEND_URL.isEmpty();
+    /** True when the TrustLine number and backend URL are set (Settings or local.properties). */
+    public static boolean isConfigured(Context context) {
+        return !listenerNumber(context).isEmpty() && !backendUrl(context).isEmpty();
+    }
+
+    /** TrustLine (Twilio) number: Settings value, else local.properties. */
+    public static String listenerNumber(Context context) {
+        String v = androidx.preference.PreferenceManager.getDefaultSharedPreferences(context)
+                .getString(SettingsKeys.TRUSTLINE_NUMBER, "").trim();
+        return v.isEmpty() ? BuildConfig.LISTENER_NUMBER : v;
+    }
+
+    /** Backend (ngrok) URL: Settings value, else local.properties. No trailing slash. */
+    public static String backendUrl(Context context) {
+        String v = androidx.preference.PreferenceManager.getDefaultSharedPreferences(context)
+                .getString(SettingsKeys.BACKEND_URL, "").trim();
+        return (v.isEmpty() ? BuildConfig.BACKEND_URL : v).replaceAll("/+$", "");
     }
 
     public static boolean isDefaultDialer(Context context) {

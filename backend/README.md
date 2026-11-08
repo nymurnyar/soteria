@@ -27,6 +27,10 @@ export PUBLIC_BASE_URL="https://<your-ngrok-subdomain>.ngrok.app"
 export TWILIO_AUTH_TOKEN="<twilio auth token>"
 export SOTERIA_API_KEY="<any long random string>"   # must match the app
 
+# Scam AI: open LM Studio -> load gpt-oss-20b -> Developer tab -> Start Server (port 1234).
+# Defaults: LLM_BASE_URL=http://localhost:1234/v1  LLM_MODEL=openai/gpt-oss-20b
+# If the model isn't reachable, a keyword checker is used instead.
+
 uvicorn main:app --host 0.0.0.0 --port 8000
 ngrok http 8000          # in another terminal
 ```

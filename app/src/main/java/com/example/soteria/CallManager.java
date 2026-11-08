@@ -84,8 +84,21 @@ public final class CallManager {
     private String partialTranscript = "";
     private int transcriptNext = 0;
 
+    // AI risk result for the current call (from the backend).
+    private int riskScore = 0;
+    private boolean riskIsScam = false;
+    private List<String> riskSigns = new ArrayList<>();
+    private String riskSummary = "";
+    private boolean warnedUser = false;
+    // Details of the protected call, kept so we can save it to Logs/Alerts when it ends.
+    private long protectedStartMs = 0;
+    private String protectedName = "";
+    private String protectedNumber = "";
+    private boolean protectedOutgoing = false;
+
     private CallManager(Context app) {
         this.app = app;
+        SoteriaApi.init(app);
     }
 
     // ---- Wiring from SoteriaInCallService -------------------------------------------------
@@ -177,6 +190,23 @@ public final class CallManager {
         Call source = !primary.getChildren().isEmpty() && protectedCall != null ? protectedCall : primary;
         String number = numberOf(source);
         return number == null ? "" : number;
+    }
+
+    public int getRiskScore() {
+        return riskScore;
+    }
+
+    public List<String> getRiskSigns() {
+        return new ArrayList<>(riskSigns);
+    }
+
+    public String getRiskSummary() {
+        return riskSummary;
+    }
+
+    /** True when the AI's risk is at/above the user's sensitivity threshold. */
+    public boolean isRisky() {
+        return riskScore >= SettingsKeys.warningThreshold(app);
     }
 
     public Protection getProtection() {
@@ -302,7 +332,7 @@ public final class CallManager {
     // ---- Protection flow -------------------------------------------------------------------
 
     private boolean shouldProtect(Call call) {
-        if (!ProtectionSettings.isActive(app) || !ProtectionSettings.isConfigured()) return false;
+        if (!ProtectionSettings.isActive(app) || !ProtectionSettings.isConfigured(app)) return false;
         if (call.getDetails().hasProperty(Call.Details.PROPERTY_CONFERENCE)) return false;
         if (isEmergency(call)) {
             Log.i(TAG, "Emergency call: never protect");
@@ -326,6 +356,17 @@ public final class CallManager {
         transcript.setLength(0);
         partialTranscript = "";
         transcriptNext = 0;
+        riskScore = 0;
+        riskIsScam = false;
+        riskSigns = new ArrayList<>();
+        riskSummary = "";
+        warnedUser = false;
+        protectedStartMs = System.currentTimeMillis();
+        protectedName = displayName(call);
+        String num = numberOf(call);
+        protectedNumber = num == null ? "" : num;
+        protectedOutgoing = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+                && call.getDetails().getCallDirection() == Call.Details.DIRECTION_OUTGOING;
         postProtection(() -> fail(app.getString(R.string.protection_failed_timeout)), PROTECTION_TIMEOUT_MS);
 
         SoteriaApi.createSession((code, error) -> {
@@ -351,7 +392,7 @@ public final class CallManager {
         PhoneAccountHandle account = call.getDetails().getAccountHandle();
         if (account != null) extras.putParcelable(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE, account);
         try {
-            telecom.placeCall(Uri.fromParts("tel", BuildConfig.LISTENER_NUMBER, null), extras);
+            telecom.placeCall(Uri.fromParts("tel", ProtectionSettings.listenerNumber(app), null), extras);
             protectionDetail = app.getString(R.string.protection_adding);
             notifyChanged();
         } catch (SecurityException e) {
@@ -433,6 +474,7 @@ public final class CallManager {
                 }
                 transcriptNext = session.next;
                 partialTranscript = session.partial == null ? "" : session.partial;
+                applyRisk(session);
                 notifyChanged();
             }
             postProtection(this::pollTranscript, TRANSCRIPT_POLL_MS);
@@ -452,12 +494,81 @@ public final class CallManager {
         notifyChanged();
     }
 
+    /** Stores the AI's latest answer and buzzes the phone the first time it crosses the threshold. */
+    private void applyRisk(SoteriaApi.Session session) {
+        riskScore = session.riskScore;
+        riskIsScam = session.isScam;
+        riskSigns = new ArrayList<>(session.signs);
+        riskSummary = session.summary == null ? "" : session.summary;
+        if (!warnedUser && isRisky()) {
+            warnedUser = true;
+            alertUser();
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    private void alertUser() {
+        try {
+            if (SettingsKeys.vibrateOnAlert(app)) {
+                android.os.Vibrator v = (android.os.Vibrator) app.getSystemService(Context.VIBRATOR_SERVICE);
+                if (v != null) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        v.vibrate(android.os.VibrationEffect.createWaveform(new long[]{0, 400, 200, 400}, -1));
+                    } else {
+                        v.vibrate(new long[]{0, 400, 200, 400}, -1);
+                    }
+                }
+            }
+            if (SettingsKeys.soundOnAlert(app)) {
+                new android.media.ToneGenerator(android.media.AudioManager.STREAM_VOICE_CALL, 80)
+                        .startTone(android.media.ToneGenerator.TONE_PROP_BEEP2, 500);
+            }
+        } catch (RuntimeException e) {
+            Log.w(TAG, "Couldn't alert user", e);
+        }
+    }
+
+    /** Saves a protected call (transcript + AI risk) so it shows in Logs and, if risky, Alerts. */
+    private void saveCall(String id, long startMs, String name, String number, boolean outgoing,
+                          String transcriptText, int score, boolean scam, List<String> signs, String summary) {
+        long ms = Math.max(0, System.currentTimeMillis() - startMs);
+        String duration = String.format(java.util.Locale.US, "%02d:%02d", ms / 60000, (ms / 1000) % 60);
+        String when = new java.text.SimpleDateFormat("'Today' · h:mm a", java.util.Locale.getDefault())
+                .format(new java.util.Date(startMs));
+        CallLog.Risk risk = score >= 70 || scam ? CallLog.Risk.FLAGGED
+                : score >= 30 ? CallLog.Risk.MONITORING : CallLog.Risk.SAFE;
+        String text = transcriptText;
+        if (summary != null && !summary.isEmpty()) text = text + (text.isEmpty() ? "" : "\n") + "Soteria: " + summary;
+        CallHistoryStore.save(app, new CallLog(id, name, number, when, duration, text,
+                score / 100.0, risk, new ArrayList<>(signs), false,
+                outgoing ? CallLog.Direction.OUTGOING : CallLog.Direction.INCOMING));
+    }
+
     private void endProtection() {
+        if (protectedCall != null && (protection == Protection.PROTECTED || transcript.length() > 0)) {
+            final String id = "call-" + protectedStartMs;
+            final long startMs = protectedStartMs;
+            final String name = protectedName;
+            final String number = protectedNumber;
+            final boolean outgoing = protectedOutgoing;
+            saveCall(id, startMs, name, number, outgoing, getTranscriptText(),
+                    riskScore, riskIsScam, riskSigns, riskSummary);
+            // The backend does one last AI check when the call ends: fetch it and update the saved call.
+            final String code = sessionCode;
+            if (code != null) {
+                main.postDelayed(() -> SoteriaApi.getSession(code, 0, (session, error) -> {
+                    if (session == null) return;
+                    StringBuilder all = new StringBuilder();
+                    for (String line : session.lines) all.append(all.length() > 0 ? "\n" : "").append(line);
+                    saveCall(id, startMs, name, number, outgoing, all.toString(),
+                            session.riskScore, session.isScam, session.signs, session.summary);
+                }), 4000);
+            }
+        }
         stopProtectionCallbacks();
         if (listenerCall != null && listenerCall.getState() != Call.STATE_DISCONNECTED) {
             listenerCall.disconnect();
         }
-        // TODO: persist the transcript to call logs/alerts once the backend analysis is wired up.
         protection = Protection.OFF;
         protectionDetail = "";
         protectedCall = null;
@@ -501,7 +612,7 @@ public final class CallManager {
 
     private boolean isListenerLeg(Call call) {
         String number = numberOf(call);
-        String listener = BuildConfig.LISTENER_NUMBER;
+        String listener = ProtectionSettings.listenerNumber(app);
         if (number == null || listener.isEmpty()) return false;
         return digitsTail(number).equals(digitsTail(listener));
     }

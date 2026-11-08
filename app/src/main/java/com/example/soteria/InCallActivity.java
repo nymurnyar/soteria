@@ -34,6 +34,7 @@ public class InCallActivity extends AppCompatActivity implements CallManager.Lis
     private TextView callerName;
     private TextView callerNumber;
     private TextView callState;
+    private TextView riskBanner;
     private View transcriptCard;
     private View transcriptSpacer;
     private TextView transcriptText;
@@ -75,6 +76,7 @@ public class InCallActivity extends AppCompatActivity implements CallManager.Lis
         callerName = findViewById(R.id.callerName);
         callerNumber = findViewById(R.id.callerNumber);
         callState = findViewById(R.id.callState);
+        riskBanner = findViewById(R.id.riskBanner);
         transcriptCard = findViewById(R.id.transcriptCard);
         transcriptSpacer = findViewById(R.id.transcriptSpacer);
         transcriptText = findViewById(R.id.transcriptText);
@@ -169,7 +171,7 @@ public class InCallActivity extends AppCompatActivity implements CallManager.Lis
         int textColor;
         int background;
         String label;
-        if (!ProtectionSettings.isActive(this) || !ProtectionSettings.isConfigured()) {
+        if (!ProtectionSettings.isActive(this) || !ProtectionSettings.isConfigured(this)) {
             label = getString(R.string.protection_off_label);
             textColor = 0xFFCBD5E1;
             background = 0x33FFFFFF;
@@ -201,6 +203,8 @@ public class InCallActivity extends AppCompatActivity implements CallManager.Lis
         protectionIcon.setImageTintList(ColorStateList.valueOf(textColor));
         protectionPill.setBackgroundTintList(ColorStateList.valueOf(background));
 
+        renderRisk(protection);
+
         boolean showTranscript = protection == CallManager.Protection.PROTECTED
                 || (protection == CallManager.Protection.FAILED && !calls.getTranscriptText().isEmpty());
         transcriptCard.setVisibility(showTranscript ? View.VISIBLE : View.GONE);
@@ -212,6 +216,22 @@ public class InCallActivity extends AppCompatActivity implements CallManager.Lis
                 transcriptScroll.post(() -> transcriptScroll.fullScroll(View.FOCUS_DOWN));
             }
         }
+    }
+
+    /** Red/amber warning with the AI's risk % and warning signs. */
+    private void renderRisk(CallManager.Protection protection) {
+        if (protection != CallManager.Protection.PROTECTED || !calls.isRisky()) {
+            riskBanner.setVisibility(View.GONE);
+            return;
+        }
+        int score = calls.getRiskScore();
+        StringBuilder text = new StringBuilder(getString(R.string.risk_warning_title, score));
+        for (String sign : calls.getRiskSigns()) text.append("\n• ").append(sign);
+        String summary = calls.getRiskSummary();
+        if (!summary.isEmpty()) text.append("\n").append(summary);
+        riskBanner.setText(text);
+        riskBanner.setBackgroundColor(score >= 70 ? 0xFFDC2626 : 0xFFB45309);
+        riskBanner.setVisibility(View.VISIBLE);
     }
 
     private static void styleToggle(MaterialButton button, boolean on) {
