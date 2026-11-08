@@ -88,8 +88,8 @@ public class DialerActivity extends AppCompatActivity {
         TextView badge = findViewById(R.id.protectionBadge);
         boolean active = ProtectionSettings.isActive(this) && ProtectionSettings.isConfigured(this);
         badge.setText(active ? R.string.dialer_protected : R.string.dialer_unprotected);
-        badge.setTextColor(active ? 0xFF15803D : 0xFF64748B);
-        badge.setBackgroundTintList(ColorStateList.valueOf(active ? 0xFFDCFCE7 : 0xFFF1F5F9));
+        badge.setTextColor(active ? 0xFF15803D : 0xFF5E6E84);
+        badge.setBackgroundTintList(ColorStateList.valueOf(active ? 0xFFDCFCE7 : 0xFFEEF4ED));
     }
 
     /** Pre-fills the number from tel: links (ACTION_DIAL / ACTION_VIEW). */
@@ -115,7 +115,7 @@ public class DialerActivity extends AppCompatActivity {
                         com.google.android.material.R.attr.materialButtonOutlinedStyle);
                 button.setText(key[1].isEmpty() ? key[0] : key[0] + "\n" + key[1]);
                 button.setTextSize(key[1].isEmpty() ? 26 : 22);
-                button.setTextColor(0xFF102A4C);
+                button.setTextColor(0xFF0B2C5E);
                 button.setAllCaps(false);
                 button.setStrokeWidth(0);
                 button.setGravity(Gravity.CENTER);

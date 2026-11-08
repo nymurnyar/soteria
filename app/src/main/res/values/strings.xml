@@ -3,11 +3,20 @@
 
     <!-- Login -->
     <string name="app_title">Soteria</string>
-    <string name="login_subtitle">Sign in to continue</string>
-    <string name="hint_username">Username or email</string>
+    <string name="login_subtitle">Sign in to keep scammers off the line</string>
+    <string name="hint_username">Username</string>
     <string name="hint_password">Password</string>
     <string name="action_login">Log in</string>
     <string name="error_username_required">Username is required</string>
+    <string name="login_title">Welcome back</string>
+    <string name="error_password_required">Password is required</string>
+    <string name="error_login_invalid">Incorrect username or password</string>
+    <string name="login_footer">Protected by Soteria · natHacks 2026</string>
+
+    <!-- Intro animation -->
+    <string name="intro_tagline">Don\'t take the bait.</string>
+    <string name="intro_skip">Tap anywhere to skip</string>
+    <string name="intro_animation_desc">Soteria logo animation: the S eel slips off a fishing hook</string>
     <string name="error_password_short">Password must be at least %1$d characters</string>
 
     <!-- Dashboard -->

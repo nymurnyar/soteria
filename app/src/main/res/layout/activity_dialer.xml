@@ -5,7 +5,7 @@
     android:id="@+id/dialerRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F7FAFF"
+    android:background="#F3F8F2"
     android:orientation="vertical"
     tools:context=".DialerActivity">
 
@@ -27,7 +27,7 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/action_back"
             android:src="@drawable/ic_arrow_back"
-            app:tint="#102A4C" />
+            app:tint="#0B2C5E" />
 
         <TextView
             android:layout_width="0dp"
@@ -35,7 +35,7 @@
             android:layout_marginStart="8dp"
             android:layout_weight="1"
             android:text="@string/dialer_title"
-            android:textColor="#102A4C"
+            android:textColor="#0B2C5E"
             android:textSize="24sp"
             android:textStyle="bold" />
 
@@ -64,7 +64,7 @@
         android:maxLines="1"
         android:paddingStart="24dp"
         android:paddingEnd="24dp"
-        android:textColor="#102A4C"
+        android:textColor="#0B2C5E"
         android:textColorHint="#94A3B8"
         android:textSize="34sp"
         tools:text="+1 780 555 0142" />
@@ -110,6 +110,6 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/dialer_delete"
             android:src="@drawable/ic_backspace"
-            app:tint="#64748B" />
+            app:tint="#5E6E84" />
     </FrameLayout>
 </LinearLayout>

@@ -236,7 +236,7 @@ public class InCallActivity extends AppCompatActivity implements CallManager.Lis
 
     private static void styleToggle(MaterialButton button, boolean on) {
         button.setBackgroundTintList(ColorStateList.valueOf(on ? 0xFFFFFFFF : 0x33FFFFFF));
-        button.setIconTint(ColorStateList.valueOf(on ? 0xFF102A4C : 0xFFFFFFFF));
+        button.setIconTint(ColorStateList.valueOf(on ? 0xFF0B2C5E : 0xFFFFFFFF));
         button.setSelected(on);
     }
 

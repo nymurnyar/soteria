@@ -29,8 +29,8 @@ public class AlertsActivity extends AppCompatActivity implements AlertAdapter.Li
 
     private static final String STATE_SHOW_OPEN = "show_open";
 
-    private static final int NAVY = 0xFF102A4C;
-    private static final int BLUE = 0xFF4285E8;
+    private static final int NAVY = 0xFF0B2C5E;
+    private static final int BLUE = 0xFF3F8F50;
     private static final int RED = 0xFFDC2626;
     private static final int AMBER = 0xFFF59E0B;
     private static final int GREEN = 0xFF15803D;
@@ -139,7 +139,7 @@ public class AlertsActivity extends AppCompatActivity implements AlertAdapter.Li
     private static void styleTab(MaterialButton tab, boolean selected) {
         tab.setBackgroundTintList(ColorStateList.valueOf(selected ? BLUE : 0xFFFFFFFF));
         tab.setTextColor(selected ? 0xFFFFFFFF : 0xFF475569);
-        tab.setStrokeColor(ColorStateList.valueOf(selected ? BLUE : 0xFFDCE5F0));
+        tab.setStrokeColor(ColorStateList.valueOf(selected ? BLUE : 0xFFD6E6D3));
         tab.setSelected(selected);
     }
 
@@ -160,7 +160,7 @@ public class AlertsActivity extends AppCompatActivity implements AlertAdapter.Li
         store.setStatus(call, status);
         refresh();
         Snackbar.make(root, message, Snackbar.LENGTH_LONG)
-                .setActionTextColor(0xFF93C5FD)
+                .setActionTextColor(0xFFA8D5A0)
                 .setAction(R.string.alerts_action_undo, v -> {
                     store.setStatus(call, previous);
                     refresh();
@@ -213,7 +213,7 @@ public class AlertsActivity extends AppCompatActivity implements AlertAdapter.Li
         primary.setBackgroundTintList(ColorStateList.valueOf(BLUE));
         primary.setTextColor(0xFFFFFFFF);
         secondary.setTextColor(NAVY);
-        secondary.setStrokeColor(ColorStateList.valueOf(0xFFDCE5F0));
+        secondary.setStrokeColor(ColorStateList.valueOf(0xFFD6E6D3));
         if (open) {
             secondary.setText(R.string.alerts_action_false_alarm);
             secondary.setOnClickListener(v -> {
@@ -246,7 +246,7 @@ public class AlertsActivity extends AppCompatActivity implements AlertAdapter.Li
 
         TextView labelView = new TextView(this);
         labelView.setText(label);
-        labelView.setTextColor(0xFF64748B);
+        labelView.setTextColor(0xFF5E6E84);
         labelView.setTextSize(13);
         row.addView(labelView, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
 

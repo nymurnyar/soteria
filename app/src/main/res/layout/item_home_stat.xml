@@ -8,7 +8,7 @@
     app:cardBackgroundColor="#FFFFFF"
     app:cardCornerRadius="18dp"
     app:cardElevation="0dp"
-    app:strokeColor="#E5EDF7"
+    app:strokeColor="#DDEBDA"
     app:strokeWidth="1dp">
 
     <LinearLayout
@@ -31,7 +31,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:textColor="#102A4C"
+            android:textColor="#0B2C5E"
             android:textSize="24sp"
             android:textStyle="bold"
             tools:text="24" />
@@ -41,7 +41,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:maxLines="1"
-            android:textColor="#64748B"
+            android:textColor="#5E6E84"
             android:textSize="12sp"
             tools:text="Calls checked" />
     </LinearLayout>

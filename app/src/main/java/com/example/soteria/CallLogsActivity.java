@@ -79,10 +79,10 @@ public class CallLogsActivity extends AppCompatActivity implements CallLogAdapte
             MaterialButton button = findViewById(ids[i]);
             boolean selected = labels[i].equals(selectedFilter);
             button.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
-                    selected ? 0xFF4285E8 : 0xFFFFFFFF));
+                    selected ? 0xFF3F8F50 : 0xFFFFFFFF));
             button.setTextColor(selected ? 0xFFFFFFFF : 0xFF475569);
             button.setStrokeColor(android.content.res.ColorStateList.valueOf(
-                    selected ? 0xFF4285E8 : 0xFFDCE5F0));
+                    selected ? 0xFF3F8F50 : 0xFFD6E6D3));
         }
     }
 
