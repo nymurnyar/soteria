@@ -33,7 +33,6 @@
         <EditTextPreference
             app:key="trustline_number"
             app:title="@string/pref_trustline_number_title"
-            app:defaultValue="+16043736537"
             app:useSimpleSummaryProvider="true" />
 
         <EditTextPreference
