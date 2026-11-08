@@ -96,8 +96,14 @@ public class HomeActivity extends AppCompatActivity {
                     : R.string.home_protection_off_toast, Toast.LENGTH_SHORT).show();
         });
 
-        bindOverview(CallLogRepository.getDemoCalls());
         renderProtection(prefs.getBoolean(KEY_ACTIVE, false));
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Refresh every time we come back, e.g. after reviewing alerts.
+        bindOverview(CallLogRepository.getDemoCalls());
     }
 
     // ---- Protection hero -------------------------------------------------------------------
@@ -161,28 +167,32 @@ public class HomeActivity extends AppCompatActivity {
     private void bindOverview(List<CallLog> calls) {
         int safe = 0;
         int flagged = 0;
-        CallLog latestFlagged = null;
         for (CallLog call : calls) {
             if (call.getRisk() == CallLog.Risk.SAFE) safe++;
-            if (call.getRisk() == CallLog.Risk.FLAGGED) {
-                flagged++;
-                if (latestFlagged == null) latestFlagged = call; // list is newest-first
-            }
+            if (call.getRisk() == CallLog.Risk.FLAGGED) flagged++;
         }
+        // Alerts the user hasn't reviewed yet (newest first); prefer the latest high-risk one.
+        List<CallLog> openAlerts = new AlertStore(this).alerts(calls, true);
+        CallLog latestAlert = null;
+        for (CallLog call : openAlerts) {
+            if (call.getRisk() == CallLog.Risk.FLAGGED) { latestAlert = call; break; }
+        }
+        if (latestAlert == null && !openAlerts.isEmpty()) latestAlert = openAlerts.get(0);
 
         bindStat(R.id.statTotal, calls.size(), R.string.home_stat_checked, BLUE);
         bindStat(R.id.statSafe, safe, R.string.stat_safe, GREEN);
         bindStat(R.id.statFlagged, flagged, R.string.stat_flagged, RED);
 
         View alertCard = findViewById(R.id.latestAlertCard);
-        if (latestFlagged == null) {
+        if (latestAlert == null) {
             alertCard.setVisibility(View.GONE);
         } else {
-            String reason = latestFlagged.getThreatCategories().isEmpty()
-                    ? "" : " · " + latestFlagged.getThreatCategories().get(0);
+            alertCard.setVisibility(View.VISIBLE);
+            String reason = latestAlert.getThreatCategories().isEmpty()
+                    ? "" : " · " + latestAlert.getThreatCategories().get(0);
             ((TextView) findViewById(R.id.latestAlertTitle))
-                    .setText(latestFlagged.getDisplayName() + reason);
-            ((TextView) findViewById(R.id.latestAlertTime)).setText(latestFlagged.getTimestamp());
+                    .setText(latestAlert.getDisplayName() + reason);
+            ((TextView) findViewById(R.id.latestAlertTime)).setText(latestAlert.getTimestamp());
             alertCard.setOnClickListener(v -> open(AlertsActivity.class));
         }
 
@@ -191,9 +201,10 @@ public class HomeActivity extends AppCompatActivity {
                 getString(R.string.home_logs_subtitle, calls.size()), 0, CallLogsActivity.class);
         bindAction(R.id.actionAlerts, R.drawable.ic_bell, RED, 0xFFFEE2E2,
                 getString(R.string.title_alerts),
-                flagged > 0 ? getString(R.string.home_alerts_subtitle_some, flagged)
+                !openAlerts.isEmpty()
+                        ? getString(R.string.home_alerts_subtitle_some, openAlerts.size())
                         : getString(R.string.home_alerts_subtitle_none),
-                flagged, AlertsActivity.class);
+                openAlerts.size(), AlertsActivity.class);
         bindAction(R.id.actionSettings, R.drawable.ic_settings, SLATE, 0xFFF1F5F9,
                 getString(R.string.title_settings),
                 getString(R.string.home_settings_subtitle), 0, SettingsActivity.class);
@@ -219,10 +230,8 @@ public class HomeActivity extends AppCompatActivity {
         ((TextView) card.findViewById(R.id.actionTitle)).setText(title);
         ((TextView) card.findViewById(R.id.actionSubtitle)).setText(subtitle);
         TextView badgeView = card.findViewById(R.id.actionBadge);
-        if (badge > 0) {
-            badgeView.setText(String.valueOf(badge));
-            badgeView.setVisibility(View.VISIBLE);
-        }
+        badgeView.setText(String.valueOf(badge));
+        badgeView.setVisibility(badge > 0 ? View.VISIBLE : View.GONE);
         card.setContentDescription(title + ". " + subtitle);
         card.setOnClickListener(v -> open(target));
     }
