@@ -1,0 +1,28 @@
+Transcript: 1108.mp4 (CNN Money clip, 50.5 s)
+Help-desk social-engineering attack: the caller talks an IT employee into opening a malicious link.
+Auto-transcribed with Whisper (small.en), then lightly cleaned. Speaker labels added by hand.
+
+[00:00] CALLER:    Hello, are you there?
+[00:02] EMPLOYEE:  Hello? Hi, this is Ken. How can I help you?
+[00:04] CALLER:    I was wondering if you can take a look at a website I'm trying to get to.
+[00:07] CALLER:    It's for a big customer thing I'm working on for Monday.
+[00:10] CALLER:    And I can't seem to get to the website from my computer.
+[00:12] EMPLOYEE:  I'll see if I can get through to it.
+[00:15] CALLER:    Thanks, man. I really appreciate the help.
+[00:16] CALLER:    I mean, it could be a stupid thing. I'm really stuck with computers.
+[00:20] CALLER:    So it's www.survey-pro.com. That's s-u-r-v-e-y dash pro dot com.
+[00:30] EMPLOYEE:  Yeah, I got that prompt to open. I just clicked open, and I'm at the site now.
+[00:34] NARRATOR:  Here's what the IT guy doesn't realize. By clicking that link,
+                   he's just given David full access to his computer.
+[00:40] CALLER:    Whoa, OK, that's weird. I just hit it, and it seems like it's working fine now.
+[00:43] CALLER:    Awesome. I don't know what you did, man, but I really appreciate the help.
+[00:46] EMPLOYEE:  Hey, no problem. That was easy.
+[00:47] ATTACKER:  That was it? We're on his computer right now.
+
+---------------------------------------------------------------------
+What Soteria would have flagged (illustration, not a recording of the app):
+[00:07] Urgency / deadline pressure ("big customer thing ... for Monday")      risk ~22
+[00:10] Request to open a website for the caller                                risk ~34
+[00:16] Sympathy / helplessness pretext ("I'm really stuck with computers")     risk ~45
+[00:24] Unverified external link spelled out over the phone -> RED ALERT        risk ~86
+[00:32] Employee opens the link: alert was already on screen ~8 s earlier.
