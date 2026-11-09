@@ -108,7 +108,7 @@ Rather than relying exclusively on known spam numbers, Soteria examines what cal
 
 ## 6. Supporting Materials
 
-- **Slides:** 
+- **Slides:** https://nymurnyar.github.io/soteria/soteria-pitch.html#1
 
 ## 7. Credits
 
