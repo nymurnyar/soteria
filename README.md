@@ -73,7 +73,7 @@ Soteria uses a four-stage detection pipeline:
 
 **Traditional security identifies suspicious callers. Soteria identifies suspicious conversations.**
 
-Rather than relying exclusively on known spam numbers, Soteria examines what callers say and how they attempt to manipulate employees.
+Rather than relying exclusively on known spam numbers, Soteria transcribes onsite using the phone's built-in speech-to-text, then examines what callers say and how they attempt to manipulate employees.
 
 ---
 
