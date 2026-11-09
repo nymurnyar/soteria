@@ -238,7 +238,7 @@
     <string name="pref_pending_summary">Pending · not available yet</string>
     <string name="pref_perm_granted">Granted</string>
     <string name="pref_perm_missing">Not granted. Tap to fix</string>
-    <string name="pref_trustline_number_title">TrustLine number (Twilio · coming soon)</string>
+    <string name="pref_trustline_number_title">Twilio (coming soon)</string>
     <string name="pref_backend_url_title">Backend URL (Twilio · coming soon)</string>
     <string name="risk_warning_title">⚠ Possible scam · %1$d%% risk</string>
 </resources>
