@@ -1,4 +1,0 @@
-fastapi>=0.115
-uvicorn[standard]>=0.30
-python-multipart>=0.0.9
-# Optional, only for Twilio signature checks (VALIDATE_TWILIO=1): twilio>=9.0
