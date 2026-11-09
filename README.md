@@ -1,128 +1,140 @@
-# Soteria
+# SOTERIA 🛡️
 
-**Real-time scam and social-engineering protection for phone calls.**
+### Don't take the bait.
 
-Soteria is an Android phone app that quietly adds a listener line (**TrustLine**) to your calls, transcribes the conversation live, and has an AI score the scam risk every few sentences. If the call looks risky, the call screen shows a warning while you're still on the line, and the call gets saved to Logs and Alerts.
+**AI-Powered Real-Time Protection Against Voice Phishing (Vishing)**
 
-Built for **natHacks 2026, Standard Division, Defense & Security theme**.
+Soteria is an AI-powered cybersecurity solution designed to protect businesses and their employees from voice phishing attacks. By analyzing phone conversations in real time, Soteria identifies suspicious language, impersonation attempts and social-engineering tactics before employees disclose sensitive information or compromise organizational security.
+
+Built for **natHacks 2026**.
+
+
 
 ---
 
-## How it works
 
+
+## 1. The Problem
+
+Voice phishing (vishing) is an increasingly serious cybersecurity threat. Attackers impersonate trusted organizations, executives, banks and technical support personnel to manipulate employees into revealing credentials, transferring money or granting unauthorized access.
+
+Traditional security solutions primarily focus on identifying suspicious phone numbers. However, they often fail to recognize malicious intent within an ongoing conversation.
+
+**The problem isn't always who is calling. It's what they're trying to make you do.**
+
+## 2. The Solution
+
+Soteria provides an additional layer of organizational security by monitoring phone conversations and identifying potential social-engineering attacks as they happen.
+
+Unlike conventional spam detection, Soteria analyzes the actual content and context of conversations to identify suspicious requests, manipulation tactics and impersonation attempts.
+
+Our goal is to help organizations protect employees before a conversation turns into a security incident.
+
+## 3. How Soteria Works
+
+Soteria uses a four-stage detection pipeline:
+
+| **Stage**          | **Description**                                                                                       |
+| ------------------ | ----------------------------------------------------------------------------------------------------- |
+| **01. Transcribe** | Converts call audio into text for analysis through our speech-to-text backend.                        |
+| **02. Analyse**    | Google Gemini examines conversations for impersonation, suspicious requests and manipulation tactics. |
+| **03. Assess**     | Evaluates conversational context and assigns a risk score from 0–100.                                 |
+| **04. Alert**      | Notifies users when potential threats are detected, highlighting warning signs.                       |
+
+### Detection Architecture
 ```
-📞 Call connects (Soteria is the default phone app)
-        ↓
-🔗 App auto-dials the TrustLine (Twilio) number and merges it into the call
-        ↓
-🎙️ Twilio transcribes the call in real time
-        ↓
-🖥️ Backend (main.py) receives each sentence
-        ↓
-🤖 Every 2 sentences: gpt-oss scores the call
-   "Is this a scam? How risky (0–100)? Which warning signs?"
-        ↓
-🖥️ Backend saves the result on the call session
-        ↓
-📱 App polls the backend every 1.5 s for transcript + risk
-        ↓
-⚠️ Warning banner + vibration on the call screen, call saved to Logs and Alerts
-```
-
-Full technical breakdown: [ARCHITECTURE.md](ARCHITECTURE.md).
-
-## Features
-
-| Feature | Status |
-|---|---|
-| Default phone app (dialer, incoming/in-call screens, notifications) | ✅ |
-| Auto-add TrustLine number and merge into the call | ✅ code done, needs our own Twilio number to test |
-| Live transcription via Twilio | ✅ code done, needs our own Twilio number to test |
-| AI scam scoring with gpt-oss (keyword fallback if the model is offline) | ✅ tested with simulated transcripts |
-| In-call risk banner (amber 30–69, red 70+) + vibration | ✅ |
-| Logs and Alerts pages (with open/resolved status) | ✅ |
-| Settings (monitoring, session, alerts, trusted contacts, privacy & permissions) | ✅ |
-| Floating overlay bubble for calls/messaging apps | 🟡 on branch `feature/overlay`, see `OVERLAY.md` |
-| SMS / email / WhatsApp monitoring, notify trusted contacts | ⏳ settings exist, not wired up |
-| Voice ID on video calls | ❌ out of scope for MVP |
-
-## Tech stack
-
-- **App:** Android, Java, `InCallService` (Telecom API), min SDK 24
-- **Backend:** Python, FastAPI, Uvicorn
-- **Telephony + speech-to-text:** Twilio Voice, `<Start><Transcription>`
-- **AI:** gpt-oss-20b via LM Studio (any OpenAI-compatible server works: Ollama, Groq)
-- **Tunnel:** ngrok (backend runs on a laptop for the demo)
-
-## Repo layout
-
-```
-app/                     Android app (Java)
-  src/main/java/com/example/soteria/
-    CallManager.java       call state, TrustLine dial + merge, polling, risk
-    SoteriaInCallService   hooks Soteria into Android's phone system
-    SoteriaApi.java        HTTP client for the backend
-    InCallActivity.java    call screen + live transcript + risk banner
-    ...                    Home, Dialer, Logs, Alerts, Settings
-backend/
-  main.py                FastAPI server: sessions, Twilio webhooks, AI scoring
-  test_flow.py           end-to-end test without Twilio
-  start-backend.bat      Windows one-click start (backend + ngrok)
-branding/                logo
+       Phone Conversation
+               |
+               v
+         Audio Capture
+               |
+               v
+       Speech-to-Text
+               |
+               v
+       Generated Transcript
+               |
+          +----+----+
+          |         |
+          v         v
+      Keyword    Gemini AI
+      Detection  Analysis
+          |         |
+          +----+----+
+               |
+               v
+         Risk Assessment
+               |
+               v
+         Alert Threshold
+               |
+               v
+        Real-Time Warning
 ```
 
-## Running it
+### Our Differentiator
 
-### 1. Backend (on a laptop)
+**Traditional security identifies suspicious callers. Soteria identifies suspicious conversations.**
 
-1. **Start the AI:** open LM Studio → load `gpt-oss-20b` → Developer tab → **Start Server** (port 1234).
-2. **Start the backend + tunnel:**
-   - Windows: double-click `backend/start-backend.bat`
-   - Manual:
-     ```bash
-     cd backend
-     python -m venv .venv && source .venv/bin/activate
-     pip install -r requirements.txt
-     export SOTERIA_API_KEY="<any long random string>"
-     export PUBLIC_BASE_URL="https://<your-ngrok-url>"
-     uvicorn main:app --host 0.0.0.0 --port 8000
-     ngrok http 8000      # separate terminal
-     ```
-3. Copy the `https://....ngrok-free.app` URL. It changes every time ngrok restarts.
-
-Optional env vars: `LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY`, `ANALYZE_EVERY_LINES` (default 2), `VALIDATE_TWILIO=1` + `TWILIO_AUTH_TOKEN` for signature checks.
-
-### 2. Twilio
-
-1. Buy a voice-capable number.
-2. Phone Numbers → your number → Voice configuration → "A call comes in": **Webhook**, `https://<ngrok-url>/twilio/voice`, **POST**.
-
-### 3. App
-
-1. Open the project in Android Studio and build (or install the APK).
-2. Set Soteria as the **default phone app** when asked.
-3. In **Settings**, fill in **TrustLine number** (the Twilio number) and **Backend URL (ngrok)**.
-   Or set them at build time in `local.properties` (not committed):
-   ```
-   soteria.listenerNumber=+15551234567
-   soteria.backendUrl=https://<your-ngrok-url>
-   soteria.apiKey=<same as SOTERIA_API_KEY>
-   ```
-
-### Testing without Twilio
-
-```bash
-cd backend
-python test_flow.py
-```
-Simulates a call session with a scam transcript and checks the risk result.
-
-## Known limitations
-
-- Backend, tunnel and AI all run on one laptop: it must stay on with LM Studio and both terminals open.
-- Sessions live in memory; restarting the backend loses them.
-- Both voices are mixed on one track, so transcript lines aren't labelled by speaker.
-- Carrier must support 3-way calling for the merge.
-- Recording/transcribing calls needs consent in many places. A production version should announce the listener and follow local law.
+Rather than relying exclusively on known spam numbers, Soteria examines what callers say and how they attempt to manipulate employees.
 
 
+
+---
+
+
+
+## 4. Key Features
+
+- **Real-Time Conversation Analysis:** Evaluates phone conversations for potential vishing attacks.
+- **AI-Powered Detection:** Uses Google Gemini to identify contextual social-engineering patterns.
+- **Dual-Layer Detection:** Combines immediate keyword checks with contextual AI analysis.
+- **Risk Scoring:** Assigns a score between 0 and 100 to communicate potential threat severity.
+- **Configurable Sensitivity:** Allows users to select their preferred detection threshold.
+- **Real-Time Alerts:** Provides visual warnings, vibrations and notifications.
+- **Call History:** Maintains accessible records of calls, transcripts and detection results.
+
+## 5. Technology Stack
+
+| **Component**       | **Technology**               |
+| ------------------- | ---------------------------- |
+| Android Application | Java                         |
+| UI Framework        | XML, Material 3              |
+| Calling Framework   | Android Telecom              |
+| Backend             | Python, FastAPI              |
+| Speech-to-Text      | Backend speech recognition   |
+| AI Analysis         | Google Gemini API            |
+| Detection Engine    | Rule-Based Keyword Detection |
+
+## 6. Supporting Materials
+
+- **Slides:** 
+
+## 7. Credits
+
+**Built by Team Soteria for natHacks 2026.**
+
+### Team Members
+
+- Nymur Nyar
+- Ercel Angeles
+- Pearl Haidar
+- Andrew Oke
+- Yatri Maheshbhai Surani
+- Avni Kataria
+
+### Technologies and Resources
+
+- [Android Developers](https://developer.android.com/)
+- [Google Gemini API](https://ai.google.dev/gemini-api/docs)
+- [FastAPI](https://fastapi.tiangolo.com/)
+- [Material Design 3](https://m3.material.io/)
+- [Claude AI](https://claude.ai/)
+
+
+
+---
+
+
+
+**SOTERIA — Don't take the bait. 🛡️**
