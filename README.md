@@ -116,7 +116,7 @@ Rather than relying exclusively on known spam numbers, Soteria examines what cal
 
 ### Team Members
 
-- Nymur Nyar
+- Nymur Nyar (Team Leader)
 - Ercel Angeles
 - Pearl Haidar
 - Andrew Oke
